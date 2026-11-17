@@ -1,0 +1,2537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOOP LINE TYCOON ∞ (環状鉄道タイクーン∞)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      overflow: hidden;
+      background-color: #03010a;
+      background-image:
+        radial-gradient(circle at 18% 12%, rgba(255, 0, 127, 0.16) 0%, transparent 42%),
+        radial-gradient(circle at 84% 18%, rgba(0, 245, 255, 0.16) 0%, transparent 44%),
+        radial-gradient(circle at 50% 92%, rgba(188, 19, 254, 0.22) 0%, transparent 50%),
+        linear-gradient(180deg, #04010d 0%, #070217 100%);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes neon-flicker {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow:
+          0 0 4px #fff,
+          0 0 11px #00f5ff,
+          0 0 22px #00f5ff,
+          0 0 40px #bc13fe;
+        opacity: 1;
+      }
+      20%, 24%, 55% {
+        text-shadow: none;
+        opacity: 0.72;
+      }
+    }
+
+    @keyframes jackpot-pulse {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.45), inset 0 0 8px rgba(255, 215, 0, 0.25);
+        filter: brightness(1.06);
+      }
+      50% {
+        box-shadow: 0 0 24px rgba(255, 0, 127, 0.85), 0 0 36px rgba(255, 215, 0, 0.65), inset 0 0 14px rgba(255, 215, 0, 0.45);
+        filter: brightness(1.22);
+      }
+    }
+
+    @keyframes rainbow-border-flow {
+      0% { border-color: #00f5ff; box-shadow: 0 0 14px rgba(0, 245, 255, 0.35), inset 0 0 16px rgba(0, 245, 255, 0.1); }
+      33% { border-color: #ff007f; box-shadow: 0 0 16px rgba(255, 0, 127, 0.38), inset 0 0 16px rgba(255, 0, 127, 0.1); }
+      66% { border-color: #bc13fe; box-shadow: 0 0 16px rgba(188, 19, 254, 0.38), inset 0 0 16px rgba(188, 19, 254, 0.1); }
+      100% { border-color: #00f5ff; box-shadow: 0 0 14px rgba(0, 245, 255, 0.35), inset 0 0 16px rgba(0, 245, 255, 0.1); }
+    }
+
+    @keyframes screen-jolt {
+      0% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(-2px, 2px) scale(1.003); }
+      50% { transform: translate(2px, -2px) scale(0.998); }
+      75% { transform: translate(-1px, -1px) scale(1.001); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    .jolt-active {
+      animation: screen-jolt 0.22s ease-out;
+    }
+
+    .neon-sign-title {
+      color: #ffffff;
+      animation: neon-flicker 5.5s infinite alternate;
+    }
+
+    .neon-gold-text {
+      color: #ffe600;
+      text-shadow: 0 0 6px rgba(255, 230, 0, 0.8), 0 0 16px rgba(255, 136, 0, 0.65);
+    }
+
+    .neon-lime-text {
+      color: #39ff14;
+      text-shadow: 0 0 6px rgba(57, 255, 20, 0.85), 0 0 18px rgba(57, 255, 20, 0.55);
+    }
+
+    .neon-pink-text {
+      color: #ff2a9d;
+      text-shadow: 0 0 6px rgba(255, 42, 157, 0.85), 0 0 18px rgba(255, 0, 127, 0.6);
+    }
+
+    .neon-cyan-text {
+      color: #00f5ff;
+      text-shadow: 0 0 6px rgba(0, 245, 255, 0.85), 0 0 16px rgba(0, 245, 255, 0.55);
+    }
+
+    .jackpot-ready {
+      animation: jackpot-pulse 1.15s infinite ease-in-out;
+    }
+
+    /* Strict Single-Screen 100vh Containment */
+    .app-shell {
+      display: grid;
+      grid-template-rows: 56px minmax(0, 1fr);
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(290px, 340px) minmax(0, 1fr) minmax(300px, 355px);
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1080px) {
+      .main-grid {
+        grid-template-columns: minmax(255px, 290px) minmax(0, 1fr) minmax(265px, 305px);
+      }
+    }
+
+    .left-panel, .center-panel, .right-panel {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .mult-chain-box {
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+    .mult-chain-box::-webkit-scrollbar {
+      display: none;
+    }
+
+    .line-card {
+      display: flex;
+      align-items: stretch;
+      gap: 4px;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      flex: 1 1 0%;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .holo-panel {
+      background: linear-gradient(155deg, rgba(14, 7, 32, 0.93) 0%, rgba(5, 3, 16, 0.97) 100%);
+      border: 1.5px solid rgba(0, 245, 255, 0.45);
+      box-shadow:
+        inset 0 0 26px rgba(188, 19, 254, 0.14),
+        0 0 18px rgba(0, 245, 255, 0.16),
+        0 8px 28px rgba(0, 0, 0, 0.8);
+    }
+
+    .neon-frame-animated {
+      animation: rainbow-border-flow 8s infinite linear;
+    }
+
+    .cyber-corner {
+      position: relative;
+    }
+    .cyber-corner::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 12px;
+      height: 12px;
+      border-top: 2.5px solid #ff007f;
+      border-left: 2.5px solid #ff007f;
+      box-shadow: -2px -2px 8px rgba(255, 0, 127, 0.7);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .cyber-corner::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 12px;
+      height: 12px;
+      border-bottom: 2.5px solid #00f5ff;
+      border-right: 2.5px solid #00f5ff;
+      box-shadow: 2px 2px 8px rgba(0, 245, 255, 0.7);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .scanline-overlay {
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0px,
+        rgba(255, 255, 255, 0) 3px,
+        rgba(255, 0, 127, 0.04) 4px
+      );
+      pointer-events: none;
+    }
+
+    .line-btn {
+      min-width: 0;
+      overflow: hidden;
+      transition: transform 0.06s ease, filter 0.12s ease, box-shadow 0.15s ease;
+    }
+    .line-btn:active:not(:disabled) {
+      transform: scale(0.975);
+    }
+    .line-btn.affordable-glow {
+      box-shadow: 0 0 14px var(--line-glow, rgba(0, 245, 255, 0.5)), inset 0 0 12px var(--line-glow-soft, rgba(0, 245, 255, 0.18));
+    }
+
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(5, 2, 18, 0.75);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #ff007f, #00f5ff);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body id="app-body" class="app-shell">
+
+  <!-- TOP 56PX NEON ARCADE TELEMETRY HUD -->
+  <header class="h-[56px] w-full max-w-full min-w-0 holo-panel neon-frame-animated border-x-0 border-t-0 px-2.5 flex items-center justify-between gap-2 z-30 overflow-hidden">
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-600/40 via-purple-600/40 to-cyan-500/40 border-2 border-cyan-300 flex items-center justify-center shadow-[0_0_16px_rgba(255,0,127,0.65)]">
+        <svg class="w-4 h-4 text-cyan-200 drop-shadow-[0_0_6px_#00f5ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+        </svg>
+      </div>
+      <div class="leading-tight hidden sm:block">
+        <div class="text-[11px] font-black tracking-wider neon-sign-title">LOOP LINE TYCOON ∞</div>
+        <div class="text-[9px] font-black tracking-widest neon-pink-text">CYBER EXPRESS // NEON GRID</div>
+      </div>
+    </div>
+
+    <!-- Live Multiplier Equation Bar -->
+    <div class="mult-chain-box flex-1 min-w-0 bg-[#050114]/95 border border-fuchsia-500/50 rounded-lg px-2 py-1 flex items-center gap-1 shadow-[inset_0_0_14px_rgba(255,0,127,0.2)]">
+      <span class="text-[11px] font-black neon-cyan-text shrink-0">(</span>
+      <div id="ui-mult-bar" class="flex items-center gap-1 shrink-0"></div>
+      <span class="text-[11px] font-black neon-cyan-text shrink-0">)</span>
+      <span class="text-[11px] font-black neon-gold-text shrink-0">^<span id="ui-common-exp" class="mono">1.00</span></span>
+      <span class="text-[10px] text-fuchsia-300 font-black shrink-0">=</span>
+      <span id="ui-total-payout" class="mono text-[12px] font-black neon-lime-text shrink-0">¥1.00</span>
+      <span class="text-[9px] text-cyan-300 font-bold shrink-0">/周</span>
+    </div>
+
+    <!-- Right: Score + Infinity Gauge + Audio + Navigation -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <div class="bg-[#060118]/95 border border-emerald-400/70 rounded-lg px-2 py-0.5 w-[166px] shrink-0 overflow-hidden shadow-[0_0_14px_rgba(57,255,20,0.25)]">
+        <div class="flex items-center justify-between gap-1 min-w-0">
+          <span id="ui-score" class="mono text-xs font-black neon-lime-text truncate">¥4.00</span>
+          <span id="ui-cap-tag" class="hidden text-[8px] px-1 rounded bg-fuchsia-500/40 text-fuchsia-100 border border-fuchsia-300 font-black shrink-0">CAP</span>
+          <span class="mono text-[9px] font-black text-fuchsia-200 bg-fuchsia-950/90 border border-fuchsia-400/60 px-1 rounded shrink-0 shadow-[0_0_8px_rgba(217,70,239,0.4)]">
+            <span id="ui-header-inf">0</span>∞/<span id="ui-header-ip">0</span>IP
+          </span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden mt-0.5 border border-fuchsia-500/40" title="インフィニティ (1.80e308) 到達ゲージ">
+          <div id="ui-inf-progress-bar" class="h-full bg-gradient-to-r from-[#39ff14] via-[#00f5ff] to-[#ff007f] shadow-[0_0_8px_#00f5ff] transition-all duration-150" style="width: 0.2%;"></div>
+        </div>
+      </div>
+
+      <button id="btn-sound-toggle" onclick="toggleSound()" title="ネオンSE効果音 ON/OFF"
+        class="px-2 py-1.5 rounded-lg bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-400/60 text-fuchsia-200 font-black text-[10px] shadow-[0_0_10px_rgba(255,0,127,0.3)] transition shrink-0">
+        🔊
+      </button>
+
+      <nav class="flex items-center gap-1 bg-[#060116]/95 p-1 rounded-lg border border-cyan-500/40 shrink-0">
+        <button onclick="switchTab('ops')" id="tab-btn-ops" class="tab-btn px-2 py-1 rounded text-[10px] font-black transition bg-cyan-500/30 text-cyan-200 border border-cyan-300 shadow-[0_0_10px_rgba(0,245,255,0.45)]">
+          経営
+        </button>
+        <button onclick="switchTab('inf')" id="tab-btn-inf" class="tab-btn px-2 py-1 rounded text-[10px] font-black transition text-slate-300 hover:text-white border border-transparent">
+          ∞/IC
+        </button>
+        <button onclick="switchTab('ach')" id="tab-btn-ach" class="tab-btn px-2 py-1 rounded text-[10px] font-black transition text-slate-300 hover:text-white border border-transparent">
+          実績<span id="ui-ach-count" class="ml-0.5 text-[9px] neon-gold-text">0/28</span>
+        </button>
+        <button onclick="switchTab('sys')" id="tab-btn-sys" class="tab-btn px-2 py-1 rounded text-[10px] font-black transition text-slate-300 hover:text-white border border-transparent">
+          設定
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 3-COLUMN SINGLE-SCREEN WORKSPACE -->
+  <main class="main-grid gap-2 p-2">
+
+    <!-- LEFT COLUMN: 10 RAILWAY LINE UPGRADE DECK -->
+    <section class="left-panel h-full holo-panel cyber-corner rounded-xl p-2 flex flex-col gap-1.5">
+      <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-fuchsia-500/35 shrink-0 min-w-0">
+        <div class="flex items-center gap-1 min-w-0">
+          <span class="text-[10px] font-black tracking-wider neon-cyan-text truncate">環状路線網</span>
+          <span id="ui-unlocked-count" class="mono text-[9px] px-1.5 py-0.5 rounded bg-cyan-950/90 border border-cyan-400/50 text-cyan-200 font-black shrink-0">1/10</span>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button id="btn-buy-amount" onclick="cycleBuyAmount()" class="hidden px-2 py-1 rounded bg-white text-slate-950 font-black text-[10px] shadow-[0_0_10px_rgba(255,255,255,0.6)] hover:bg-cyan-100 transition">
+            購入:1
+          </button>
+          <button id="btn-buy-all" onclick="buyAllLines()" disabled class="px-2 py-1 rounded bg-emerald-600/30 text-emerald-200/50 border border-emerald-500/30 font-black text-[10px] transition">
+            全て購入 (100万)
+          </button>
+          <button id="btn-ascend-all" onclick="ascendAllLines()" class="px-2 py-1 rounded bg-amber-500/25 hover:bg-amber-500/45 text-amber-200 border border-amber-400/70 font-black text-[10px] shadow-[0_0_10px_rgba(255,191,0,0.35)] transition">
+            一括A
+          </button>
+        </div>
+      </div>
+
+      <div id="ui-lines-list" class="flex-1 min-h-0 min-w-0 grid grid-rows-10 gap-1 overflow-y-auto overflow-x-hidden pr-0.5"></div>
+    </section>
+
+    <!-- CENTER COLUMN: NEO-CENTRAL TERMINAL HOLOGRAPHIC NEON RADAR -->
+    <section class="center-panel h-full holo-panel cyber-corner rounded-xl p-2 flex flex-col gap-1.5">
+      <div id="canvas-wrapper" class="canvas-wrap bg-[#03010a] rounded-lg border border-fuchsia-500/45 flex items-center justify-center shadow-[inset_0_0_30px_rgba(188,19,254,0.2)]">
+        <div class="absolute inset-0 scanline-overlay z-10"></div>
+        <canvas id="railway-canvas" class="block w-full h-full"></canvas>
+
+        <div class="absolute top-2 left-2 z-20 pointer-events-none bg-[#07021a]/85 border border-cyan-400/60 rounded-lg px-2.5 py-1 backdrop-blur-sm shadow-[0_0_15px_rgba(0,245,255,0.3)]">
+          <div class="text-[9px] neon-pink-text font-black tracking-widest">⚡ NEON TELEMETRY</div>
+          <div class="mono text-[12px] font-black neon-lime-text">+<span id="ui-rev-rate">¥0.20</span>/sec</div>
+          <div class="mono text-[9px] text-cyan-200">総周回数: <span id="ui-total-laps" class="font-black text-white">0</span></div>
+        </div>
+
+        <div id="ui-active-ic-badge" class="hidden absolute top-2 right-2 z-20 bg-rose-950/90 border-2 border-rose-400 rounded-lg px-2.5 py-1 text-right shadow-[0_0_18px_rgba(244,63,94,0.7)]">
+          <div class="text-[9px] font-black text-rose-200 tracking-wider">CHALLENGE ACTIVE</div>
+          <div id="ui-active-ic-name" class="text-[11px] font-black text-white">IC1</div>
+        </div>
+
+        <div id="ui-infinity-ready-banner" class="hidden absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20">
+          <button onclick="triggerInfinity()" class="jackpot-ready px-4 py-2 rounded-xl bg-gradient-to-r from-[#ff007f] via-[#bc13fe] to-[#00f5ff] text-white font-black text-xs border-2 border-white">
+            ∞ インフィニティ到達！無限の力を獲得 (+<span id="ui-banner-ip">1</span> IP)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: COMMAND DECK TABS -->
+    <section class="right-panel h-full holo-panel cyber-corner rounded-xl p-2.5 flex flex-col">
+
+      <!-- TAB 1: PRESTIGE & PROMOTION -->
+      <div id="tab-content-ops" class="tab-pane flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto custom-scroll pr-0.5">
+        <div class="rounded-xl bg-[#08031c]/95 border border-cyan-400/50 p-2.5 flex flex-col gap-1.5 shrink-0 shadow-[0_0_16px_rgba(0,245,255,0.16)]">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-xs font-black neon-cyan-text flex items-center gap-1.5">
+                <span>自己破産 (プレステージ)</span>
+                <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-400/60 text-cyan-200">累計: <span id="ui-prestige-count">0</span>回</span>
+              </div>
+              <div class="text-[10px] text-slate-300">累計スコア 1.00e10 で解放。進行をリセットし恒久倍率を獲得。</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 bg-[#040110]/90 rounded-lg p-2 border border-fuchsia-500/35">
+            <div>
+              <div class="text-[9px] text-cyan-300 font-bold">P.倍率 (11番目グレー)</div>
+              <div class="mono text-xs font-black text-white">
+                ×<span id="ui-pmult-cur">1.00</span>
+                <span class="neon-lime-text text-[10px]"> → ×<span id="ui-pmult-next">1.00</span></span>
+              </div>
+            </div>
+            <div>
+              <div class="text-[9px] text-amber-300 font-bold">P.指数 (共通指数)</div>
+              <div class="mono text-xs font-black neon-gold-text">
+                ^<span id="ui-pexp-cur">1.00</span>
+                <span class="neon-lime-text text-[10px]"> → ^<span id="ui-pexp-next">1.00</span></span>
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-prestige" onclick="doPrestige()" disabled
+            class="w-full py-2 px-3 rounded-lg bg-slate-900/80 text-slate-500 border border-slate-700 font-black text-xs transition">
+            累計 1.00e10 で解放 (現在: ¥4.00)
+          </button>
+        </div>
+
+        <div class="rounded-xl bg-[#08031c]/95 border border-amber-400/50 p-2.5 flex-1 min-h-0 flex flex-col gap-1.5 shadow-[0_0_16px_rgba(255,215,0,0.14)]">
+          <div class="flex items-center justify-between shrink-0">
+            <div>
+              <div class="text-xs font-black neon-gold-text">ダイヤ改正 (プロモーション)</div>
+              <div id="ui-promo-unlock-hint" class="text-[10px] text-slate-300">P.倍率 ×13,319 (Exp 8) 到達で解放</div>
+            </div>
+            <div class="text-right mono text-[10px]">
+              <div class="text-amber-200 font-black">Exp: <span id="ui-promo-exp">0</span> <span class="neon-lime-text">(+<span id="ui-promo-exp-gain">0</span>)</span></div>
+              <div class="text-[9px] text-slate-400">実行回数: <span id="ui-promo-count">0</span></div>
+            </div>
+          </div>
+
+          <div id="ui-promo-list" class="flex-1 min-h-0 flex flex-col gap-1.5 overflow-y-auto custom-scroll"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: INFINITY & CHALLENGES -->
+      <div id="tab-content-inf" class="tab-pane hidden flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto custom-scroll pr-0.5">
+        <div class="rounded-xl bg-gradient-to-br from-fuchsia-950/90 via-purple-950/90 to-[#060116] border border-fuchsia-400/60 p-2.5 flex flex-col gap-1.5 shrink-0 shadow-[0_0_20px_rgba(217,70,239,0.28)]">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-black neon-pink-text">∞ インフィニティ & ブレイク</div>
+            <div class="mono text-xs font-black text-fuchsia-200"><span id="ui-inf-count">0</span> ∞ / <span id="ui-ip-amount">0</span> IP</div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-[10px] mono bg-[#040110]/85 p-1.5 rounded-lg border border-fuchsia-500/35">
+            <div>最速∞タイム: <span id="ui-fastest-inf" class="neon-cyan-text font-bold">--</span></div>
+            <div>IC総クリア時間: <span id="ui-ic-total-time" class="neon-gold-text font-bold">--</span></div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btn-manual-infinity" onclick="triggerInfinity()" disabled
+              class="flex-1 py-1.5 px-2 rounded-lg bg-purple-900/40 text-purple-300/50 border border-purple-500/30 font-black text-[11px] transition">
+              1.80e308 でインフィニティ
+            </button>
+            <button id="btn-break-infinity" onclick="toggleBreakInfinity()" disabled
+              class="py-1.5 px-2.5 rounded-lg bg-slate-900 text-slate-500 border border-slate-700 font-black text-[10px] transition">
+              ブレイク∞: 未解放
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-[#08031c]/95 border border-indigo-400/50 p-2 flex flex-col gap-1.5 shrink-0">
+          <div class="text-[11px] font-black text-indigo-300">インフィニティアップグレード</div>
+          <div id="ui-inf-upgrades" class="grid grid-cols-1 gap-1"></div>
+        </div>
+
+        <div class="rounded-xl bg-[#08031c]/95 border border-rose-400/55 p-2 flex flex-col gap-1.5 shrink-0">
+          <div class="flex items-center justify-between">
+            <div class="text-[11px] font-black neon-pink-text">インフィニティチャレンジ (IC1〜IC9)</div>
+            <button id="btn-exit-ic" onclick="exitInfinityChallenge()" class="hidden px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-black text-[10px] shadow-[0_0_10px_rgba(244,63,94,0.6)]">
+              挑戦を中断
+            </button>
+          </div>
+          <div id="ui-ic-lock-banner" class="rounded-lg bg-rose-950/70 border border-rose-400/50 px-2.5 py-2 text-center">
+            <div class="text-[11px] font-black text-rose-200">🔒 インフィニティチャレンジ解放条件: 2 IP 到達</div>
+            <div id="ui-ic-lock-progress" class="mono text-[10px] text-rose-300/90 mt-0.5">現在: 0 / 2 IP</div>
+          </div>
+          <div id="ui-ic-unlocked-area" class="hidden flex-col gap-1.5">
+            <div class="text-[9px] text-slate-300">目標: 制約下で 1.80e308 円に到達。全9種クリアでブレイクインフィニティ解放！</div>
+            <div id="ui-ic-list" class="flex flex-col gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: ACHIEVEMENTS (28 ITEMS) -->
+      <div id="tab-content-ach" class="tab-pane hidden flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto custom-scroll pr-0.5">
+        <div class="rounded-xl bg-[#08031c]/95 border border-amber-400/50 p-2 flex items-center justify-between shrink-0">
+          <span class="text-xs font-black neon-gold-text">運行実績レコード</span>
+          <span id="ui-ach-summary" class="mono text-xs font-black text-amber-200">0 / 28</span>
+        </div>
+        <div id="ui-ach-list" class="flex-1 min-h-0 flex flex-col gap-1 overflow-y-auto custom-scroll pr-0.5"></div>
+      </div>
+
+      <!-- TAB 4: SETTINGS, STATS & DEV MODE -->
+      <div id="tab-content-sys" class="tab-pane hidden flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto custom-scroll pr-0.5">
+        <div class="rounded-xl bg-[#08031c]/95 border border-cyan-400/50 p-2.5 flex flex-col gap-2 shrink-0">
+          <div class="text-xs font-black neon-cyan-text">表示・システム設定</div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] text-slate-300">数値表記フォーマット</span>
+            <button id="btn-notation" onclick="toggleNotation()" class="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-400/60 text-cyan-200 font-black text-[10px]">
+              標準表記 (T, Qa, Vg...)
+            </button>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <button onclick="manualSave()" class="flex-1 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-400/60 text-emerald-200 font-black text-[11px]">
+              手動セーブ
+            </button>
+            <button onclick="openResetModal()" class="flex-1 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 border border-rose-400/60 text-rose-200 font-black text-[11px]">
+              データ初期化
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-[#08031c]/95 border border-fuchsia-400/40 p-2.5 flex flex-col gap-1.5 shrink-0 text-[10px] mono">
+          <div class="text-xs font-black neon-pink-text font-sans">運行統計データ</div>
+          <div class="flex justify-between"><span class="text-slate-400">総プレイ時間</span><span id="stat-playtime" class="text-white font-bold">00:00:00</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">今∞の累計売上</span><span id="stat-cumscore" class="text-emerald-300 font-bold">¥4.00</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">総周回数</span><span id="stat-totallaps" class="text-cyan-300 font-bold">0</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">自己破産回数</span><span id="stat-prestiges" class="text-white font-bold">0</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">ダイヤ改正回数</span><span id="stat-promos" class="text-amber-300 font-bold">0</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">インフィニティ回数</span><span id="stat-infs" class="text-fuchsia-300 font-bold">0</span></div>
+        </div>
+
+        <!-- Developer Mode Unlock & Controls -->
+        <div class="rounded-xl bg-[#08031c]/95 border border-purple-500/40 p-2.5 flex flex-col gap-2 shrink-0">
+          <div class="text-xs font-black text-purple-300">指令室メンテナンスコード</div>
+          <div class="flex items-center gap-1.5">
+            <input id="dev-code-input" type="password" placeholder="コード入力..." class="flex-1 min-w-0 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white mono focus:outline-none focus:border-fuchsia-400" />
+            <button onclick="checkDevCode()" class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] shrink-0">
+              認証
+            </button>
+          </div>
+          <div id="dev-panel" class="hidden flex-col gap-1.5 pt-1 border-t border-purple-500/30">
+            <div class="flex items-center justify-between text-[10px] font-black text-fuchsia-300">
+              <span>DEVELOPER MODE ACTIVE</span>
+              <span id="dev-speed-label" class="mono">×1</span>
+            </div>
+            <div class="grid grid-cols-4 gap-1">
+              <button onclick="setDevSpeed(1)" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">×1</button>
+              <button onclick="setDevSpeed(10)" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">×10</button>
+              <button onclick="setDevSpeed(100)" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">×100</button>
+              <button onclick="setDevSpeed(1000)" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">×1000</button>
+            </div>
+            <div class="grid grid-cols-3 gap-1">
+              <button onclick="devAddMoney(10)" class="py-1 rounded bg-emerald-900/60 hover:bg-emerald-800 text-[10px] font-bold text-emerald-200">資金 ×1e10</button>
+              <button onclick="devSetInfinity()" class="py-1 rounded bg-fuchsia-900/60 hover:bg-fuchsia-800 text-[10px] font-bold text-fuchsia-200">1.80e308</button>
+              <button onclick="devAddIP(10)" class="py-1 rounded bg-indigo-900/60 hover:bg-indigo-800 text-[10px] font-bold text-indigo-200">+10 IP</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-3 right-3 z-50 flex flex-col gap-1.5 pointer-events-none max-w-xs"></div>
+
+  <!-- CUSTOM RESET CONFIRMATION MODAL -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="holo-panel rounded-2xl p-5 max-w-sm w-full border border-rose-500/50 flex flex-col gap-3">
+      <div class="text-sm font-black text-rose-400">セーブデータの完全初期化</div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        すべての運行記録、プレステージ、プロモーション、インフィニティ、実績を完全に削除して最初からやり直しますか？
+      </p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeResetModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200">キャンセル</button>
+        <button onclick="executeHardReset()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-black text-white">初期化する</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. CUSTOM BIGNUM ENGINE (Mantissa + Exponent for values past 1.80e308)
+    // =========================================================================
+    class BigNum {
+      constructor(m = 0, e = 0) {
+        if (m instanceof BigNum) {
+          this.m = m.m;
+          this.e = m.e;
+          return;
+        }
+        if (typeof m === 'string') {
+          const parsed = BigNum.fromString(m);
+          this.m = parsed.m;
+          this.e = parsed.e;
+          return;
+        }
+        this.m = Number(m) || 0;
+        this.e = Number(e) || 0;
+        this.normalize();
+      }
+
+      normalize() {
+        if (!Number.isFinite(this.m) || !Number.isFinite(this.e) || this.m === 0) {
+          this.m = 0;
+          this.e = 0;
+          return this;
+        }
+        const sign = this.m < 0 ? -1 : 1;
+        let absM = Math.abs(this.m);
+        if (absM >= 10 || absM < 1) {
+          const shift = Math.floor(Math.log10(absM));
+          absM /= Math.pow(10, shift);
+          this.e += shift;
+        }
+        if (absM >= 9.9999999999999) {
+          absM = 1;
+          this.e += 1;
+        }
+        this.m = sign * absM;
+        return this;
+      }
+
+      static fromNumber(n) {
+        if (n === 0 || !Number.isFinite(n)) return new BigNum(0, 0);
+        return new BigNum(n, 0);
+      }
+
+      static fromExp10(exp) {
+        if (!Number.isFinite(exp)) return new BigNum(1.8, 308);
+        if (exp < -300) return new BigNum(0, 0);
+        const e = Math.floor(exp);
+        const m = Math.pow(10, exp - e);
+        return new BigNum(m, e);
+      }
+
+      static fromString(str) {
+        const s = String(str).trim();
+        if (!s || s === '0') return new BigNum(0, 0);
+        const parts = s.toLowerCase().split('e');
+        if (parts.length === 2) {
+          return new BigNum(parseFloat(parts[0]), parseFloat(parts[1]));
+        }
+        return new BigNum(parseFloat(s), 0);
+      }
+
+      clone() {
+        return new BigNum(this.m, this.e);
+      }
+
+      log10() {
+        if (this.m <= 0) return -Infinity;
+        return this.e + Math.log10(this.m);
+      }
+
+      toNumber() {
+        if (this.m === 0) return 0;
+        if (this.e > 308) return Infinity;
+        if (this.e < -308) return 0;
+        return this.m * Math.pow(10, this.e);
+      }
+
+      cmp(other) {
+        const b = other instanceof BigNum ? other : BigNum.fromNumber(other);
+        if (this.m === 0 && b.m === 0) return 0;
+        if (this.m > 0 && b.m <= 0) return 1;
+        if (this.m <= 0 && b.m > 0) return -1;
+        if (this.e !== b.e) return this.e > b.e ? 1 : -1;
+        if (Math.abs(this.m - b.m) < 1e-12) return 0;
+        return this.m > b.m ? 1 : -1;
+      }
+
+      gt(o) { return this.cmp(o) > 0; }
+      gte(o) { return this.cmp(o) >= 0; }
+      lt(o) { return this.cmp(o) < 0; }
+      lte(o) { return this.cmp(o) <= 0; }
+
+      add(other) {
+        const b = other instanceof BigNum ? other : BigNum.fromNumber(other);
+        if (this.m === 0) return b.clone();
+        if (b.m === 0) return this.clone();
+        const diff = this.e - b.e;
+        if (diff > 15) return this.clone();
+        if (diff < -15) return b.clone();
+        if (diff >= 0) {
+          return new BigNum(this.m + b.m * Math.pow(10, -diff), this.e);
+        } else {
+          return new BigNum(this.m * Math.pow(10, diff) + b.m, b.e);
+        }
+      }
+
+      sub(other) {
+        const b = other instanceof BigNum ? other : BigNum.fromNumber(other);
+        if (b.m === 0) return this.clone();
+        if (this.lte(b)) return new BigNum(0, 0);
+        const diff = this.e - b.e;
+        if (diff > 15) return this.clone();
+        return new BigNum(this.m - b.m * Math.pow(10, -diff), this.e);
+      }
+
+      mul(other) {
+        const b = other instanceof BigNum ? other : BigNum.fromNumber(other);
+        if (this.m === 0 || b.m === 0) return new BigNum(0, 0);
+        return new BigNum(this.m * b.m, this.e + b.e);
+      }
+
+      div(other) {
+        const b = other instanceof BigNum ? other : BigNum.fromNumber(other);
+        if (this.m === 0 || b.m === 0) return new BigNum(0, 0);
+        return new BigNum(this.m / b.m, this.e - b.e);
+      }
+
+      pow(power) {
+        if (power === 0) return new BigNum(1, 0);
+        if (this.m <= 0) return new BigNum(0, 0);
+        const totalExp = this.log10() * power;
+        return BigNum.fromExp10(totalExp);
+      }
+    }
+
+    const INFINITY_CAP = new BigNum(1.80, 308);
+    const STANDARD_SUFFIXES = [
+      '', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No',
+      'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc', 'SxDc', 'SpDc', 'OcDc', 'NoDc',
+      'Vg', 'UVg', 'DVg', 'TVg', 'QaVg', 'QiVg', 'SxVg', 'SpVg', 'OcVg', 'NoVg',
+      'Tg', 'UTg', 'DTg', 'TTg', 'QaTg', 'QiTg', 'SxTg', 'SpTg', 'OcTg', 'NoTg',
+      'Qd', 'UQd', 'DQd', 'TQd', 'QaQd', 'QiQd', 'SxQd', 'SpQd', 'OcQd', 'NoQd',
+      'Qn', 'UQn', 'DQn', 'TQn', 'QaQn', 'QiQn', 'SxQn', 'SpQn', 'OcQn', 'NoQn',
+      'Se', 'USe', 'DSe', 'TSe', 'QaSe', 'QiSe', 'SxSe', 'SpSe', 'OcSe', 'NoSe',
+      'St', 'USt', 'DSt', 'TSt', 'QaSt', 'QiSt', 'SxSt', 'SpSt', 'OcSt', 'NoSt',
+      'Og', 'UOg', 'DOg', 'TOg', 'QaOg', 'QiOg', 'SxOg', 'SpOg', 'OcOg', 'NoOg',
+      'Nn', 'UNn', 'DNn', 'TNn', 'QaNn', 'QiNn', 'SxNn', 'SpNn', 'OcNn', 'NoNn',
+      'Ce'
+    ];
+
+    function formatBN(val, decimals = 2) {
+      const bn = val instanceof BigNum ? val : BigNum.fromNumber(val);
+      if (bn.m === 0) return '0.00';
+      const e = bn.e;
+      if (e < 3 && e >= -2) {
+        return bn.toNumber().toFixed(decimals);
+      }
+      if (state.notation === 'standard') {
+        const tier = Math.floor(e / 3);
+        if (tier >= 0 && tier < STANDARD_SUFFIXES.length) {
+          const scaled = bn.m * Math.pow(10, e - tier * 3);
+          return `${scaled.toFixed(decimals)}${STANDARD_SUFFIXES[tier]}`;
+        }
+      }
+      return `${bn.m.toFixed(decimals)}e${e}`;
+    }
+
+    function formatYen(val) {
+      return `¥${formatBN(val, 2)}`;
+    }
+
+    // =========================================================================
+    // 2. EXACT ROUTE DEFINITIONS (10 LINES WITH TRUE BASE COSTS, R & SPEEDS)
+    // =========================================================================
+    const LINE_DEFS = [
+      { id: 0, name: '赤線 (レッド)',     color: '#ff2a55', baseCost: new BigNum(4, 0),    costR: 1.20, baseSpeed: 0.200 },
+      { id: 1, name: '橙線 (オレンジ)',   color: '#ff7b00', baseCost: new BigNum(1, 2),    costR: 1.24, baseSpeed: 0.100 },
+      { id: 2, name: '黄線 (イエロー)',   color: '#ffe600', baseCost: new BigNum(1, 3),    costR: 1.28, baseSpeed: 1 / 15 },
+      { id: 3, name: '緑線 (グリーン)',   color: '#39ff14', baseCost: new BigNum(1, 4),    costR: 1.32, baseSpeed: 0.050 },
+      { id: 4, name: '青緑線 (ティール)', color: '#00ffaa', baseCost: new BigNum(1, 6),    costR: 1.36, baseSpeed: 0.040 },
+      { id: 5, name: '水線 (シアン)',     color: '#00f5ff', baseCost: new BigNum(1, 9),    costR: 1.40, baseSpeed: 1 / 30 },
+      { id: 6, name: '青線 (ブルー)',     color: '#3b82ff', baseCost: new BigNum(1, 12),   costR: 1.44, baseSpeed: 1 / 35 },
+      { id: 7, name: '紫線 (パープル)',   color: '#bc13fe', baseCost: new BigNum(1, 15),   costR: 1.48, baseSpeed: 0.025 },
+      { id: 8, name: '桃線 (ピンク)',     color: '#ff0099', baseCost: new BigNum(1, 18),   costR: 1.52, baseSpeed: 1 / 45 },
+      { id: 9, name: '白線 (ホワイト)',   color: '#ffffff', baseCost: new BigNum(1, 27),   costR: 1.56, baseSpeed: 0.020 }
+    ];
+
+    const PROMO_DEFS = [
+      { id: 0, title: '#1 倍率獲得倍率', desc: '全路線のマルチゲインがアップ' },
+      { id: 1, title: '#2 ラップ速度倍率', desc: '全路線のラップ速度がアップ' },
+      { id: 2, title: '#3 アセンションパワー', desc: '全路線のアセンションパワーがアップ' },
+      { id: 3, title: '#4 プロモーションパワー', desc: 'プロモーション#1・#2・#3の効果がアップ' }
+    ];
+
+    const IC_DEFS = [
+      { id: 1, name: 'IC1: イオン化速度', constraint: '制約: プロモーション#2と#4が無効化', reward: '報酬: プロモーション#2と#4が強化される' },
+      { id: 2, name: 'IC2: 降下',         constraint: '制約: アセンションパワーが1/4になる', reward: '報酬: アセンションパワーが1.2倍になる' },
+      { id: 3, name: 'IC3: 最初の根',     constraint: '制約: 共通指数 -0.40', reward: '報酬: 共通指数 +0.03' },
+      { id: 4, name: 'IC4: 急勾配',       constraint: '制約: 全プレステージとプロモーション獲得量が ^0.4', reward: '報酬: ∞後の全プロモーションに+1Lv、IP獲得量×2' },
+      { id: 5, name: 'IC5: 解雇された',   constraint: '制約: すべてのプロモーションが大幅に弱体化', reward: '報酬: すべてのプロモーションを少し強化する' },
+      { id: 6, name: 'IC6: 枯渇',         constraint: '制約: すべての倍率が非常に速く減少する', reward: '報酬: すべての路線の倍率獲得量が2倍強化される' },
+      { id: 7, name: 'IC7: 二次分割',     constraint: '制約: 全乗数が (最速∞タイム)^2 で割られる', reward: '報酬: 全乗数を (最速∞タイム)^2 で乗算する' },
+      { id: 8, name: 'IC8: 非上昇',       constraint: '制約: アセンションが無効化される', reward: '報酬: 基礎アセンションパワー +2' },
+      { id: 9, name: 'IC9: 孤立主義',     constraint: '制約: 4色(赤・橙・黄・緑)のみでプレイ', reward: '報酬: インフィニティ獲得量(∞)を倍増' }
+    ];
+
+    const ACH_DEFS = [
+      { id: 1,  name: '100万',               desc: '1,000,000スコアに到達する', reward: '' },
+      { id: 2,  name: '初アセンション',       desc: '購入要素をアセンションする', reward: '' },
+      { id: 3,  name: 'RGB',                 desc: '青の路線を購入する', reward: '' },
+      { id: 4,  name: 'プレステージしよう',   desc: '初めてプレステージをする', reward: '報酬: 購入数指定ボタン解放' },
+      { id: 5,  name: '1,000越え',           desc: 'いずれかの倍率を1,000以上にする', reward: '' },
+      { id: 6,  name: '2回目のアセンション', desc: 'アセンション2に到達する', reward: '' },
+      { id: 7,  name: 'ダブルプレステージ',   desc: 'プレステージを2回行う', reward: '' },
+      { id: 8,  name: 'プロモーションの時間', desc: 'P.倍率を×1,000にする', reward: '' },
+      { id: 9,  name: '色彩スペクトル',       desc: '白を購入する', reward: '報酬: ラップ速度 ×1.05' },
+      { id: 10, name: '指数の力',             desc: '指数を1.1以上にする', reward: '' },
+      { id: 11, name: '初プロモート',         desc: '初めてプロモートする', reward: '' },
+      { id: 12, name: '点滅防止',             desc: '赤の路線の1秒ごとの回転数が10を超える', reward: '' },
+      { id: 13, name: '巨大倍率',             desc: 'P.倍率を×1,000,000にする', reward: '' },
+      { id: 14, name: 'アップデートはまだ？', desc: '5時間プレイする', reward: '報酬: 全ての倍率獲得量 ×1.05' },
+      { id: 15, name: 'さらに先へ',           desc: '指数を1.2以上にする', reward: '' },
+      { id: 16, name: 'それって大きい数字？', desc: '1.00Vg円 (1e63円) を所持する', reward: '' },
+      { id: 17, name: '大きな倍率',           desc: '全ての倍率を1,000より大きくする', reward: '' },
+      { id: 18, name: 'よくやった',           desc: 'レベル10のプロモーションを一つ所持する', reward: '' },
+      { id: 19, name: '本当によくやった',     desc: '全てのプロモーションをレベル10以上にする', reward: '報酬: プロモーション#4が少し強化される' },
+      { id: 20, name: 'それはいらない',       desc: 'プレステージせずにプロモートする', reward: '報酬: P.倍率獲得量 ^1.01' },
+      { id: 21, name: 'グーゴル',             desc: '10.0DTg (1e100円) を所持する', reward: '' },
+      { id: 22, name: '高速スケーリング',     desc: '基礎倍率獲得量を1以上にする', reward: '' },
+      { id: 23, name: '大きな一歩',           desc: '1回のプレステージでP.倍率を1,000,000倍にする', reward: '' },
+      { id: 24, name: 'たった3つ',           desc: '3路線だけでプレステージする', reward: '' },
+      { id: 25, name: '楽々プレステージ',     desc: 'プレステージもアセンションもせずにプロモートする', reward: '' },
+      { id: 26, name: '最高だ！',             desc: '赤、オレンジ、黄を第6アセンションまで進める', reward: '' },
+      { id: 27, name: '真のボス',             desc: '全てのプロモーションをレベル50以上にする', reward: '' },
+      { id: 28, name: 'インフィニティ',       desc: 'インフィニティに到達する', reward: '' }
+    ];
+
+    const INF_UPG_DEFS = [
+      { id: 'iu1', name: '無限軌道ブースト', desc: '全路線の倍率獲得量 ×3', baseCost: new BigNum(1, 0), costMult: 4 },
+      { id: 'iu2', name: '超伝導リニア化', desc: '全路線のラップ速度 ×1.5', baseCost: new BigNum(2, 0), costMult: 5 },
+      { id: 'iu3', name: '自己破産コンデンサ', desc: 'P.倍率獲得量 ×5', baseCost: new BigNum(3, 0), costMult: 6 },
+      { id: 'iu4', name: '次元指数増幅器', desc: '共通指数 +0.02', baseCost: new BigNum(10, 0), costMult: 10 },
+      { id: 'iu5', name: 'ICタイム共鳴炉', desc: 'IC総クリア時間が短いほど全マルチゲイン強化', baseCost: new BigNum(5, 0), costMult: 8 }
+    ];
+
+    const BUY_MODES = [1, 5, 10, 25, 100, 'max'];
+
+    // =========================================================================
+    // 3. GAME STATE & INITIALIZATION
+    // =========================================================================
+    function createInitialState() {
+      const lines = [];
+      for (let i = 0; i < 10; i++) {
+        lines.push({
+          level: i === 0 ? 1 : 0,
+          ascensions: 0,
+          progress: 0,
+          mult: new BigNum(1, 0),
+          laps: 0
+        });
+      }
+      return {
+        score: new BigNum(4, 0),
+        cumScore: new BigNum(4, 0),
+        infCumScore: new BigNum(4, 0),
+        lines,
+        pMult: new BigNum(1, 0),
+        pExp: 1.00,
+        prestigeCount: 0,
+        promoLevels: [0, 0, 0, 0],
+        promoCount: 0,
+        everPrestigedThisPromo: false,
+        everAscendedThisPromo: false,
+        infinities: new BigNum(0, 0),
+        ip: new BigNum(0, 0),
+        infUpgrades: { iu1: 0, iu2: 0, iu3: 0, iu4: 0, iu5: 0 },
+        fastestInfTime: null,
+        infRunTime: 0,
+        activeIC: 0,
+        icUnlocked: false,
+        icCompleted: {},
+        icBestTimes: {},
+        breakInfinity: false,
+        achievements: {},
+        buyAmountMode: 0,
+        notation: 'standard',
+        playTime: 0,
+        totalLaps: 0,
+        devUnlocked: false,
+        devSpeed: 1
+      };
+    }
+
+    let state = createInitialState();
+
+    // =========================================================================
+    // 4. CORE FORMULAS, MULTIPLIERS, COSTS & ACHIEVEMENT CHECKS
+    // =========================================================================
+    function getUnlockedLineCount() {
+      const maxAllowed = state.activeIC === 9 ? 4 : 10;
+      let unlocked = 1;
+      for (let i = 0; i < maxAllowed - 1; i++) {
+        if (state.lines[i].level >= 5 || state.lines[i].ascensions > 0) {
+          unlocked++;
+        } else {
+          break;
+        }
+      }
+      return Math.min(maxAllowed, unlocked);
+    }
+
+    function getMaxLevel(i) {
+      return 100 + state.lines[i].ascensions * 10;
+    }
+
+    function getAscensionPower() {
+      let base = 10;
+      if (state.icCompleted[8]) base += 2;
+      base *= getEffectivePromoEffect(2);
+      if (state.icCompleted[2]) base *= 1.2;
+      if (state.activeIC === 2) base *= 0.25;
+      if (state.activeIC === 8) base = 1;
+      return base;
+    }
+
+    function getEffectivePromoEffect(id) {
+      if (state.activeIC === 1 && (id === 1 || id === 3)) return 1.0;
+      const lv = state.promoLevels[id] || 0;
+      if (lv <= 0) return 1.0;
+
+      const weaken = state.activeIC === 5 ? 0.35 : 1.0;
+      const ic5Reward = state.icCompleted[5] ? 1.12 : 1.0;
+
+      if (id === 3) {
+        const ach19 = state.achievements[19] ? 1.15 : 1.0;
+        return 1 + lv * 0.12 * weaken * ic5Reward * ach19;
+      }
+
+      const p4Power = getEffectivePromoEffect(3);
+      if (id === 0) {
+        const ic1 = state.icCompleted[1] ? 1.15 : 1.0;
+        return Math.pow(1.65, lv * weaken * ic5Reward * ic1 * p4Power);
+      }
+      if (id === 1) {
+        const ic1 = state.icCompleted[1] ? 1.2 : 1.0;
+        return 1 + lv * 0.22 * weaken * ic5Reward * ic1 * p4Power;
+      }
+      if (id === 2) {
+        return 1 + lv * 0.15 * weaken * ic5Reward * p4Power;
+      }
+      return 1.0;
+    }
+
+    function getLineLapSpeed(i) {
+      const line = state.lines[i];
+      if (line.level <= 0) return 0;
+      let spd = LINE_DEFS[i].baseSpeed * line.level;
+      spd *= getEffectivePromoEffect(1);
+      if (state.achievements[9]) spd *= 1.05;
+      const iu2 = state.infUpgrades.iu2 || 0;
+      if (iu2 > 0) spd *= Math.pow(1.5, iu2);
+      return spd;
+    }
+
+    function getBaseMultGainPerLap() {
+      let base = 0.01;
+      base *= getEffectivePromoEffect(0);
+      if (state.achievements[14]) base *= 1.05;
+      if (state.icCompleted[6]) base *= 2;
+      const iu1 = state.infUpgrades.iu1 || 0;
+      if (iu1 > 0) base *= Math.pow(3, iu1);
+      const iu5 = state.infUpgrades.iu5 || 0;
+      if (iu5 > 0) {
+        const icTime = Math.max(1, getTotalICTime());
+        const bonus = Math.max(1.5, 60 / icTime);
+        base *= Math.pow(bonus, iu5);
+      }
+      return base;
+    }
+
+    function getLineMultGain(i) {
+      let gain = getBaseMultGainPerLap();
+      const asc = state.lines[i].ascensions;
+      if (asc > 0 && state.activeIC !== 8) {
+        gain *= Math.pow(getAscensionPower(), asc);
+      }
+      return gain;
+    }
+
+    // Exact cost calculation: baseCost * (R^100) * ((R+0.1)^100) * ... * ((R+0.1*a)^b)
+    function getSingleLevelCost(i, ascensions, level) {
+      const def = LINE_DEFS[i];
+      let logCost = def.baseCost.log10();
+      for (let a = 0; a < ascensions; a++) {
+        const rA = def.costR + 0.1 * a;
+        logCost += 100 * Math.log10(rA);
+      }
+      const rCur = def.costR + 0.1 * ascensions;
+      logCost += level * Math.log10(rCur);
+      return BigNum.fromExp10(logCost);
+    }
+
+    function getNextUpgradeInfo(i) {
+      const line = state.lines[i];
+      const maxLv = getMaxLevel(i);
+      const remaining = maxLv - line.level;
+      if (remaining <= 0) return { count: 0, cost: new BigNum(0, 0) };
+
+      const mode = state.achievements[4] ? BUY_MODES[state.buyAmountMode] : 1;
+      let targetCount = mode === 'max' ? remaining : Math.min(remaining, Number(mode) || 1);
+
+      if (mode === 'max') {
+        let totalCost = new BigNum(0, 0);
+        let count = 0;
+        for (let k = 0; k < remaining; k++) {
+          const c = getSingleLevelCost(i, line.ascensions, line.level + k);
+          const nextSum = totalCost.add(c);
+          if (nextSum.lte(state.score)) {
+            totalCost = nextSum;
+            count++;
+          } else {
+            break;
+          }
+        }
+        if (count === 0) {
+          return { count: 1, cost: getSingleLevelCost(i, line.ascensions, line.level) };
+        }
+        return { count, cost: totalCost };
+      }
+
+      let totalCost = new BigNum(0, 0);
+      for (let k = 0; k < targetCount; k++) {
+        totalCost = totalCost.add(getSingleLevelCost(i, line.ascensions, line.level + k));
+      }
+      return { count: targetCount, cost: totalCost };
+    }
+
+    function getCommonExponent() {
+      let exp = state.pExp;
+      if (state.icCompleted[3]) exp += 0.03;
+      const iu4 = state.infUpgrades.iu4 || 0;
+      if (iu4 > 0) exp += 0.02 * iu4;
+      if (state.activeIC === 3) exp -= 0.40;
+      return Math.max(0.05, exp);
+    }
+
+    function getTotalMultiplierProduct() {
+      let prod = new BigNum(1, 0);
+      const unlocked = getUnlockedLineCount();
+      for (let i = 0; i < unlocked; i++) {
+        prod = prod.mul(state.lines[i].mult);
+      }
+      prod = prod.mul(state.pMult);
+
+      const fastTime = Math.max(0.05, state.fastestInfTime || 1);
+      if (state.icCompleted[7]) {
+        prod = prod.mul(fastTime * fastTime);
+      }
+      if (state.activeIC === 7) {
+        prod = prod.div(Math.max(1, fastTime * fastTime));
+      }
+      return prod;
+    }
+
+    function getPayoutPerLap() {
+      const prod = getTotalMultiplierProduct();
+      const exp = getCommonExponent();
+      return prod.pow(exp);
+    }
+
+    function getPotentialPrestige() {
+      const logScore = state.cumScore.log10();
+      if (logScore < 10) {
+        return { unlocked: false, pMult: new BigNum(1, 0), pExp: 1.00 };
+      }
+      const excess = logScore - 10;
+      let multExp = 0.25 * excess;
+      if (state.achievements[20]) multExp *= 1.01;
+
+      let pMult = BigNum.fromExp10(multExp);
+      const iu3 = state.infUpgrades.iu3 || 0;
+      if (iu3 > 0) pMult = pMult.mul(Math.pow(5, iu3));
+
+      let pExp = 1.03 + Math.min(0.45, excess * 0.0022);
+
+      if (state.activeIC === 4) {
+        pMult = pMult.pow(0.4);
+        pExp = 1 + (pExp - 1) * 0.4;
+      }
+
+      if (pMult.lt(state.pMult)) pMult = state.pMult.clone();
+      if (pExp < state.pExp) pExp = state.pExp;
+
+      return { unlocked: true, pMult, pExp };
+    }
+
+    function getCurrentPromoExp() {
+      const logPM = state.pMult.log10();
+      if (logPM < 1.5) return 0;
+      let rawExp = Math.floor(Math.pow(logPM / 4.12447, 1.5) * 8);
+      if (state.activeIC === 4) {
+        rawExp = Math.floor(Math.pow(rawExp, 0.4));
+      }
+      return Math.max(0, rawExp);
+    }
+
+    function getPromoTargetLevel(idx, curExp) {
+      const curLv = state.promoLevels[idx] || 0;
+      if (curExp <= 0) return curLv;
+      const maxAffordableLv = Math.floor(Math.log2(curExp));
+      return Math.max(curLv, maxAffordableLv);
+    }
+
+    function unlockAchievement(id) {
+      if (state.achievements[id]) return;
+      state.achievements[id] = true;
+      const def = ACH_DEFS.find(a => a.id === id);
+      if (def) {
+        showToast(`🏆 実績解除 #${id}: ${def.name}`, 'amber');
+      }
+    }
+
+    function checkAchievements() {
+      if (state.score.gte(new BigNum(1, 6)) || state.cumScore.gte(new BigNum(1, 6))) unlockAchievement(1);
+      if (state.lines.some(l => l.ascensions >= 1)) unlockAchievement(2);
+      if (state.lines[6].level >= 1) unlockAchievement(3);
+      if (state.prestigeCount >= 1) unlockAchievement(4);
+      if (state.lines.some(l => l.mult.gte(1000)) || state.pMult.gte(1000)) unlockAchievement(5);
+      if (state.lines.some(l => l.ascensions >= 2)) unlockAchievement(6);
+      if (state.prestigeCount >= 2) unlockAchievement(7);
+      if (state.pMult.gte(1000)) unlockAchievement(8);
+      if (state.lines[9].level >= 1) unlockAchievement(9);
+      if (getCommonExponent() >= 1.1) unlockAchievement(10);
+      if (state.promoCount >= 1) unlockAchievement(11);
+      if (getLineLapSpeed(0) > 10) unlockAchievement(12);
+      if (state.pMult.gte(new BigNum(1, 6))) unlockAchievement(13);
+      if (state.playTime >= 18000) unlockAchievement(14);
+      if (getCommonExponent() >= 1.2) unlockAchievement(15);
+      if (state.score.gte(new BigNum(1, 63))) unlockAchievement(16);
+      if (state.lines.every(l => l.mult.gt(1000)) && state.pMult.gt(1000)) unlockAchievement(17);
+      if (state.promoLevels.some(lv => lv >= 10)) unlockAchievement(18);
+      if (state.promoLevels.every(lv => lv >= 10)) unlockAchievement(19);
+      if (state.score.gte(new BigNum(1, 100))) unlockAchievement(21);
+      if (getBaseMultGainPerLap() >= 1) unlockAchievement(22);
+      if (state.lines[0].ascensions >= 6 && state.lines[1].ascensions >= 6 && state.lines[2].ascensions >= 6) unlockAchievement(26);
+      if (state.promoLevels.every(lv => lv >= 50)) unlockAchievement(27);
+      if (state.infinities.gte(1) || state.score.gte(INFINITY_CAP)) unlockAchievement(28);
+    }
+
+    // =========================================================================
+    // 5. PLAYER ACTIONS & NEON ARCADE SOUND / JUICE FEEDBACK
+    // =========================================================================
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function playNeonTone(freq, type = 'sine', duration = 0.08, vol = 0.06, slideTo = null) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+        }
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      } catch (e) {}
+    }
+
+    function triggerScreenJolt() {
+      const body = document.getElementById('app-body');
+      if (!body) return;
+      body.classList.remove('jolt-active');
+      void body.offsetWidth;
+      body.classList.add('jolt-active');
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('btn-sound-toggle');
+      if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+      if (soundEnabled) playNeonTone(660, 'triangle', 0.09, 0.07, 990);
+    }
+
+    function addScore(amount) {
+      if (amount.lte(0)) return;
+      state.score = state.score.add(amount);
+      state.cumScore = state.cumScore.add(amount);
+      state.infCumScore = state.infCumScore.add(amount);
+
+      if (!state.breakInfinity && state.score.gt(INFINITY_CAP)) {
+        state.score = INFINITY_CAP.clone();
+      }
+    }
+
+    function buyLine(i) {
+      const unlocked = getUnlockedLineCount();
+      if (i >= unlocked) return;
+      const line = state.lines[i];
+      const maxLv = getMaxLevel(i);
+      if (line.level >= maxLv) return;
+
+      const info = getNextUpgradeInfo(i);
+      if (info.count <= 0 || state.score.lt(info.cost)) return;
+
+      state.score = state.score.sub(info.cost);
+      line.level += info.count;
+      playNeonTone(320 + i * 55, 'triangle', 0.07, 0.06, 520 + i * 75);
+      checkAchievements();
+    }
+
+    function buyAllLines() {
+      if (state.cumScore.lt(new BigNum(1, 6)) && state.score.lt(new BigNum(1, 6))) return;
+      const unlocked = getUnlockedLineCount();
+      for (let i = 0; i < unlocked; i++) {
+        buyLine(i);
+      }
+    }
+
+    function cycleBuyAmount() {
+      if (!state.achievements[4]) return;
+      state.buyAmountMode = (state.buyAmountMode + 1) % BUY_MODES.length;
+      playNeonTone(580, 'sine', 0.05, 0.05);
+    }
+
+    function ascendLine(i) {
+      if (state.activeIC === 8) {
+        showToast('IC8制約: アセンションは無効化されています！', 'rose');
+        return;
+      }
+      const line = state.lines[i];
+      const maxLv = getMaxLevel(i);
+      if (line.level < maxLv) return;
+
+      line.ascensions += 1;
+      line.level = 5;
+      state.everAscendedThisPromo = true;
+      triggerScreenJolt();
+      playNeonTone(440, 'sawtooth', 0.16, 0.07, 1180);
+      spawnStationPulse(LINE_DEFS[i].color, 1.35);
+      checkAchievements();
+      showToast(`${LINE_DEFS[i].name} 複々線化 (A:${line.ascensions}) 完了！`, 'amber');
+    }
+
+    function ascendAllLines() {
+      if (state.activeIC === 8) return;
+      const unlocked = getUnlockedLineCount();
+      let count = 0;
+      for (let i = 0; i < unlocked; i++) {
+        if (state.lines[i].level >= getMaxLevel(i)) {
+          ascendLine(i);
+          count++;
+        }
+      }
+      if (count > 0) showToast(`${count}路線を一括複々線化しました！`, 'amber');
+    }
+
+    function resetPrePrestigeProgress() {
+      state.score = new BigNum(4, 0);
+      state.cumScore = new BigNum(4, 0);
+      for (let i = 0; i < 10; i++) {
+        state.lines[i].level = i === 0 ? 1 : 0;
+        state.lines[i].ascensions = 0;
+        state.lines[i].progress = 0;
+        state.lines[i].mult = new BigNum(1, 0);
+      }
+    }
+
+    function doPrestige() {
+      const pot = getPotentialPrestige();
+      if (!pot.unlocked) return;
+
+      if (pot.pMult.div(state.pMult).gte(new BigNum(1, 6))) {
+        unlockAchievement(23);
+      }
+      if (getUnlockedLineCount() === 3) {
+        unlockAchievement(24);
+      }
+
+      state.pMult = pot.pMult;
+      state.pExp = pot.pExp;
+      state.prestigeCount += 1;
+      state.everPrestigedThisPromo = true;
+
+      resetPrePrestigeProgress();
+      triggerScreenJolt();
+      playNeonTone(260, 'sawtooth', 0.24, 0.08, 880);
+      spawnStationPulse('#00f5ff', 1.8);
+      checkAchievements();
+      showToast(`自己破産実行！ P.倍率 ×${formatBN(state.pMult)} / P.指数 ^${state.pExp.toFixed(2)}`, 'sky');
+    }
+
+    function doPromote(idx) {
+      const curExp = getCurrentPromoExp();
+      const targetLv = getPromoTargetLevel(idx, curExp);
+      if (targetLv <= state.promoLevels[idx]) return;
+
+      if (state.promoCount === 0) {
+        if (idx !== 0 || targetLv < 3) {
+          showToast('初回プロモーションは #1 を Lv.3以上 にする必要があります', 'amber');
+          return;
+        }
+      }
+
+      if (!state.everPrestigedThisPromo) {
+        unlockAchievement(20);
+        if (!state.everAscendedThisPromo) {
+          unlockAchievement(25);
+        }
+      }
+
+      state.promoLevels[idx] = targetLv;
+      state.promoCount += 1;
+      state.pMult = new BigNum(1, 0);
+      state.pExp = 1.00;
+      state.everPrestigedThisPromo = false;
+      state.everAscendedThisPromo = false;
+
+      resetPrePrestigeProgress();
+      triggerScreenJolt();
+      playNeonTone(360, 'square', 0.26, 0.07, 1320);
+      spawnStationPulse('#ffe600', 2.0);
+      checkAchievements();
+      showToast(`ダイヤ改正完了！ ${PROMO_DEFS[idx].title} が Lv.${targetLv} に到達！`, 'amber');
+    }
+
+    function getIPGainOnInfinity() {
+      if (state.score.lt(INFINITY_CAP)) return new BigNum(0, 0);
+      if (!state.breakInfinity) {
+        let baseIP = new BigNum(1, 0);
+        if (state.icCompleted[4]) baseIP = baseIP.mul(2);
+        return baseIP;
+      }
+      const ratio = state.score.div(INFINITY_CAP);
+      let ip = ratio.pow(0.15);
+      if (ip.lt(1)) ip = new BigNum(1, 0);
+      if (state.icCompleted[4]) ip = ip.mul(2);
+      return ip;
+    }
+
+    function triggerInfinity() {
+      if (state.score.lt(INFINITY_CAP)) return;
+
+      if (state.activeIC > 0) {
+        const icId = state.activeIC;
+        state.icCompleted[icId] = true;
+        const prevBest = state.icBestTimes[icId];
+        if (!prevBest || state.infRunTime < prevBest) {
+          state.icBestTimes[icId] = state.infRunTime;
+        }
+        state.activeIC = 0;
+        showToast(`IC${icId} クリア達成！ (${state.infRunTime.toFixed(1)}秒)`, 'rose');
+      }
+
+      const ipGain = getIPGainOnInfinity();
+      let infGain = new BigNum(1, 0);
+      if (state.icCompleted[9]) infGain = infGain.mul(2);
+
+      state.infinities = state.infinities.add(infGain);
+      state.ip = state.ip.add(ipGain);
+      isICUnlocked();
+
+      if (!state.fastestInfTime || state.infRunTime < state.fastestInfTime) {
+        state.fastestInfTime = Math.max(0.05, state.infRunTime);
+      }
+
+      state.pMult = new BigNum(1, 0);
+      state.pExp = 1.00;
+      const basePromoLv = state.icCompleted[4] ? 1 : 0;
+      state.promoLevels = [basePromoLv, basePromoLv, basePromoLv, basePromoLv];
+      state.promoCount = 0;
+      state.everPrestigedThisPromo = false;
+      state.everAscendedThisPromo = false;
+      state.infCumScore = new BigNum(4, 0);
+      state.infRunTime = 0;
+
+      resetPrePrestigeProgress();
+      triggerScreenJolt();
+      playNeonTone(220, 'sawtooth', 0.45, 0.09, 1760);
+      spawnStationPulse('#ff007f', 2.6);
+      unlockAchievement(28);
+      checkAchievements();
+      showToast(`∞ インフィニティ到達！ +${formatBN(ipGain, 0)} IP 獲得！`, 'purple');
+    }
+
+    function buyInfinityUpgrade(id) {
+      const def = INF_UPG_DEFS.find(u => u.id === id);
+      if (!def) return;
+      const lv = state.infUpgrades[id] || 0;
+      const cost = def.baseCost.mul(Math.pow(def.costMult, lv));
+      if (state.ip.lt(cost)) return;
+
+      state.ip = state.ip.sub(cost);
+      state.infUpgrades[id] = lv + 1;
+      showToast(`${def.name} Lv.${lv + 1} を購入しました！`, 'indigo');
+    }
+
+    function isICUnlocked() {
+      if (state.icUnlocked) return true;
+      if (state.ip.gte(2) || getAllICCompletedCount() > 0 || state.activeIC > 0) {
+        state.icUnlocked = true;
+        return true;
+      }
+      return false;
+    }
+
+    function startInfinityChallenge(icId) {
+      if (!isICUnlocked() && !state.devUnlocked) {
+        showToast('インフィニティチャレンジは 2 IP 到達で解放されます！', 'rose');
+        return;
+      }
+      state.activeIC = icId;
+      state.pMult = new BigNum(1, 0);
+      state.pExp = 1.00;
+      state.promoLevels = [0, 0, 0, 0];
+      state.promoCount = 0;
+      state.infRunTime = 0;
+      resetPrePrestigeProgress();
+      showToast(`IC${icId} に挑戦開始！ 目標: 1.80e308 円`, 'rose');
+    }
+
+    function exitInfinityChallenge() {
+      if (state.activeIC === 0) return;
+      const id = state.activeIC;
+      state.activeIC = 0;
+      state.pMult = new BigNum(1, 0);
+      state.pExp = 1.00;
+      resetPrePrestigeProgress();
+      showToast(`IC${id} の挑戦を中断しました`, 'slate');
+    }
+
+    function getAllICCompletedCount() {
+      let c = 0;
+      for (let i = 1; i <= 9; i++) {
+        if (state.icCompleted[i]) c++;
+      }
+      return c;
+    }
+
+    function getTotalICTime() {
+      let sum = 0;
+      for (let i = 1; i <= 9; i++) {
+        if (state.icBestTimes[i]) sum += state.icBestTimes[i];
+      }
+      return sum;
+    }
+
+    function toggleBreakInfinity() {
+      if (getAllICCompletedCount() < 9) return;
+      state.breakInfinity = !state.breakInfinity;
+      showToast(`ブレイクインフィニティ: ${state.breakInfinity ? 'ON (上限突破)' : 'OFF'}`, 'purple');
+    }
+
+    // =========================================================================
+    // 6. SIMULATION TICK & DOPAMINE LAP SHOCKWAVES
+    // =========================================================================
+    const neonShockwaves = [];
+    const neonSparks = [];
+    let stationPulseEnergy = 0;
+    let lastLapChimeAt = 0;
+
+    function spawnLapJuice(lineIdx, gainAmount) {
+      const def = LINE_DEFS[lineIdx];
+      stationPulseEnergy = Math.min(1.5, stationPulseEnergy + 0.22);
+
+      if (neonShockwaves.length < 28) {
+        neonShockwaves.push({
+          lineIdx,
+          color: def.color,
+          life: 1.0
+        });
+      }
+
+      if (neonSparks.length < 75) {
+        for (let k = 0; k < 3; k++) {
+          const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
+          const spd = 24 + Math.random() * 55;
+          neonSparks.push({
+            lineIdx,
+            xOff: 0,
+            yOff: 0,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            color: def.color,
+            life: 1.0,
+            label: k === 0 ? `+${formatBN(gainAmount)}` : null
+          });
+        }
+      }
+
+      const nowMs = performance.now();
+      if (nowMs - lastLapChimeAt > 140) {
+        lastLapChimeAt = nowMs;
+        playNeonTone(520 + lineIdx * 65, 'sine', 0.045, 0.025, 780 + lineIdx * 75);
+      }
+    }
+
+    function spawnStationPulse(color, intensity = 1.2) {
+      stationPulseEnergy = Math.min(2.0, stationPulseEnergy + intensity);
+      neonShockwaves.push({
+        lineIdx: -1,
+        color,
+        life: 1.2
+      });
+    }
+
+    function tickSimulation(dt) {
+      const effectiveDt = dt * (state.devUnlocked ? state.devSpeed : 1);
+      state.playTime += dt;
+      state.infRunTime += effectiveDt;
+      stationPulseEnergy = Math.max(0, stationPulseEnergy - dt * 2.4);
+
+      for (let s = neonShockwaves.length - 1; s >= 0; s--) {
+        neonShockwaves[s].life -= dt * 2.2;
+        if (neonShockwaves[s].life <= 0) neonShockwaves.splice(s, 1);
+      }
+      for (let p = neonSparks.length - 1; p >= 0; p--) {
+        const sp = neonSparks[p];
+        sp.xOff += sp.vx * dt;
+        sp.yOff += sp.vy * dt;
+        sp.life -= dt * 1.9;
+        if (sp.life <= 0) neonSparks.splice(p, 1);
+      }
+
+      if (!state.breakInfinity && state.score.gte(INFINITY_CAP)) {
+        state.score = INFINITY_CAP.clone();
+        if (state.activeIC > 0) {
+          triggerInfinity();
+        }
+        return;
+      }
+
+      const unlocked = getUnlockedLineCount();
+      let earnedThisTick = new BigNum(0, 0);
+
+      for (let i = 0; i < unlocked; i++) {
+        const line = state.lines[i];
+        if (line.level <= 0) continue;
+
+        if (state.activeIC === 6 && line.mult.gt(1)) {
+          const decayFactor = Math.pow(0.65, effectiveDt);
+          const nextM = line.mult.pow(decayFactor);
+          line.mult = nextM.lt(1) ? new BigNum(1, 0) : nextM;
+        }
+
+        const spd = getLineLapSpeed(i);
+        line.progress += spd * effectiveDt;
+
+        if (line.progress >= 1) {
+          const completedLaps = Math.floor(line.progress);
+          line.progress -= completedLaps;
+          line.laps += completedLaps;
+          state.totalLaps += completedLaps;
+
+          const gainPerLap = getLineMultGain(i);
+          const totalGain = gainPerLap * completedLaps;
+          line.mult = line.mult.add(totalGain);
+
+          const payout = getPayoutPerLap().mul(completedLaps);
+          earnedThisTick = earnedThisTick.add(payout);
+          spawnLapJuice(i, totalGain);
+        }
+      }
+
+      if (earnedThisTick.gt(0)) {
+        addScore(earnedThisTick);
+      }
+
+      checkAchievements();
+    }
+
+    // =========================================================================
+    // 7. REALISTIC DOUBLE-RAIL TRACKS & DETAILED ELECTRIC TRAIN RENDERER
+    // =========================================================================
+    const canvas = document.getElementById('railway-canvas');
+    const ctx = canvas.getContext('2d');
+    let canvasW = 400;
+    let canvasH = 400;
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      if (!wrapper) return;
+      const cw = wrapper.clientWidth;
+      const ch = wrapper.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const nw = Math.floor(cw);
+      const nh = Math.floor(ch);
+      if (nw === canvasW && nh === canvasH && canvas.width === nw * dpr) return;
+
+      canvasW = nw;
+      canvasH = nh;
+      canvas.width = canvasW * dpr;
+      canvas.height = canvasH * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => resizeCanvas());
+      ro.observe(document.getElementById('canvas-wrapper'));
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawTrainCar(ctx, x, y, angle, carW, carL, color, isLead, isHyper, nowSec) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+
+      if (isLead) {
+        const beamLen = isHyper ? 28 : 20;
+        const beamGrad = ctx.createLinearGradient(0, -carL * 0.5, 0, -carL * 0.5 - beamLen);
+        beamGrad.addColorStop(0, 'rgba(255, 255, 230, 0.55)');
+        beamGrad.addColorStop(1, 'rgba(255, 255, 230, 0)');
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(-carW * 0.35, -carL * 0.5);
+        ctx.lineTo(carW * 0.35, -carL * 0.5);
+        ctx.lineTo(carW * 1.6, -carL * 0.5 - beamLen);
+        ctx.lineTo(-carW * 1.6, -carL * 0.5 - beamLen);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.shadowColor = color;
+      ctx.shadowBlur = isHyper ? 12 : 6;
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      if (isLead) {
+        ctx.moveTo(0, -carL * 0.68);
+        ctx.quadraticCurveTo(carW * 0.52, -carL * 0.35, carW * 0.5, carL * 0.45);
+        ctx.lineTo(-carW * 0.5, carL * 0.45);
+        ctx.quadraticCurveTo(-carW * 0.52, -carL * 0.35, 0, -carL * 0.68);
+      } else {
+        ctx.roundRect(-carW * 0.5, -carL * 0.5, carW, carL, 1.5);
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = color;
+      ctx.fillRect(-carW * 0.5, -carL * 0.28, carW * 0.24, carL * 0.68);
+      ctx.fillRect(carW * 0.26, -carL * 0.28, carW * 0.24, carL * 0.68);
+
+      if (isLead) {
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.moveTo(0, -carL * 0.48);
+        ctx.lineTo(carW * 0.34, -carL * 0.24);
+        ctx.lineTo(-carW * 0.34, -carL * 0.24);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(-carW * 0.32, -carL * 0.52, 1.4, 1.4);
+        ctx.fillRect(carW * 0.32 - 1.4, -carL * 0.52, 1.4, 1.4);
+      } else {
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(-carW * 0.24, -carL * 0.28, carW * 0.48, carL * 0.28);
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 0.9;
+        ctx.strokeRect(-carW * 0.36, carL * 0.08, carW * 0.72, carL * 0.26);
+
+        if (isHyper && Math.sin(nowSec * 45 + x) > 0.2) {
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(0, carL * 0.21, 2.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function renderRailwayCanvas(nowSec) {
+      const w = canvasW;
+      const h = canvasH;
+      const cx = w / 2;
+      const cy = h / 2;
+      const minDim = Math.min(w, h);
+
+      ctx.clearRect(0, 0, w, h);
+
+      const bgGrad = ctx.createRadialGradient(cx, cy, minDim * 0.01, cx, cy, minDim * 0.56);
+      bgGrad.addColorStop(0, '#2b094d');
+      bgGrad.addColorStop(0.32, '#0d0628');
+      bgGrad.addColorStop(0.72, '#040212');
+      bgGrad.addColorStop(1, '#020008');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      const maxR = Math.max(46, minDim * 0.445);
+      const stationOuterR = Math.max(18, maxR * 0.24);
+      const minR = stationOuterR + Math.max(9, maxR * 0.068);
+      const stepR = (maxR - minR) / 9;
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 0, 127, 0.11)';
+      ctx.lineWidth = 1;
+      for (let k = 0; k < 12; k++) {
+        const ang = (k * Math.PI) / 6;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * stationOuterR, cy + Math.sin(ang) * stationOuterR);
+        ctx.lineTo(cx + Math.cos(ang) * (maxR + 14), cy + Math.sin(ang) * (maxR + 14));
+        ctx.stroke();
+      }
+      const sweep1 = (nowSec * 1.1) % (Math.PI * 2);
+      const sweep2 = (-nowSec * 0.75 + Math.PI) % (Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.28)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(sweep1) * (maxR + 6), cy + Math.sin(sweep1) * (maxR + 6));
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 0, 127, 0.24)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(sweep2) * (maxR + 6), cy + Math.sin(sweep2) * (maxR + 6));
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 230, 0, 0.45)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - stationOuterR);
+      ctx.lineTo(cx, cy - maxR - 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      const unlocked = getUnlockedLineCount();
+      const gaugeHalf = Math.max(1.6, Math.min(2.8, stepR * 0.17));
+
+      for (let i = 0; i < 10; i++) {
+        const def = LINE_DEFS[i];
+        const line = state.lines[i];
+        const r = minR + stepR * i;
+        const isUnlocked = i < unlocked;
+        const isActive = isUnlocked && line.level > 0;
+        const spd = getLineLapSpeed(i);
+        const isHyperBeam = spd > 10;
+
+        ctx.save();
+        if (!isUnlocked) {
+          ctx.setLineDash([3, 6]);
+          ctx.strokeStyle = 'rgba(139, 92, 246, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          continue;
+        }
+
+        ctx.strokeStyle = 'rgba(12, 6, 30, 0.92)';
+        ctx.lineWidth = gaugeHalf * 3.6;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const sleeperCount = Math.max(28, Math.floor(r * 0.95));
+        ctx.strokeStyle = isActive ? 'rgba(226, 232, 240, 0.35)' : 'rgba(100, 116, 139, 0.18)';
+        ctx.lineWidth = 1.5;
+        const tieHalf = gaugeHalf * 1.55;
+        for (let s = 0; s < sleeperCount; s++) {
+          const a = (s / sleeperCount) * Math.PI * 2;
+          const cos = Math.cos(a);
+          const sin = Math.sin(a);
+          ctx.beginPath();
+          ctx.moveTo(cx + cos * (r - tieHalf), cy + sin * (r - tieHalf));
+          ctx.lineTo(cx + cos * (r + tieHalf), cy + sin * (r + tieHalf));
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = isActive ? def.color : 'rgba(100, 116, 139, 0.4)';
+        ctx.lineWidth = isHyperBeam ? 2.0 : 1.35;
+        if (isActive) {
+          ctx.shadowColor = def.color;
+          ctx.shadowBlur = isHyperBeam ? 16 : 8;
+        }
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - gaugeHalf, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + gaugeHalf, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        if (isActive) {
+          const leadAngle = -Math.PI / 2 + line.progress * Math.PI * 2;
+          const carW = Math.max(4.6, gaugeHalf * 2.4);
+          const carL = Math.max(8.5, Math.min(13.5, stepR * 0.72));
+          const carGapAngle = (carL + 2.2) / Math.max(22, r);
+          const numCars = isHyperBeam ? 4 : 3;
+
+          const trailArc = isHyperBeam ? Math.PI * 0.85 : Math.min(0.65, 0.18 + spd * 0.04);
+          ctx.strokeStyle = def.color;
+          ctx.lineWidth = isHyperBeam ? gaugeHalf * 2.4 : gaugeHalf * 1.5;
+          ctx.globalAlpha = isHyperBeam ? 0.55 : 0.32;
+          ctx.shadowColor = def.color;
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, leadAngle - trailArc, leadAngle);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+
+          const rearAngle = leadAngle - (numCars - 1) * carGapAngle - (carL * 0.5) / Math.max(22, r);
+          const rx = cx + Math.cos(rearAngle) * r;
+          const ry = cy + Math.sin(rearAngle) * r;
+          ctx.fillStyle = '#ff0055';
+          ctx.shadowColor = '#ff0055';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          for (let c = numCars - 1; c >= 0; c--) {
+            const ca = leadAngle - c * carGapAngle;
+            const tx = cx + Math.cos(ca) * r;
+            const ty = cy + Math.sin(ca) * r;
+
+            if (c < numCars - 1) {
+              const nextCa = leadAngle - (c + 1) * carGapAngle;
+              const midCa = (ca + nextCa) / 2;
+              ctx.fillStyle = '#1e1b4b';
+              ctx.beginPath();
+              ctx.arc(cx + Math.cos(midCa) * r, cy + Math.sin(midCa) * r, carW * 0.34, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            drawTrainCar(ctx, tx, ty, ca, carW, carL, def.color, c === 0, isHyperBeam, nowSec);
+          }
+        }
+        ctx.restore();
+      }
+
+      ctx.save();
+      for (const sw of neonShockwaves) {
+        const baseR = sw.lineIdx >= 0 ? (minR + stepR * sw.lineIdx) : stationOuterR;
+        const expandR = baseR + (1.2 - sw.life) * (sw.lineIdx >= 0 ? 12 : maxR * 0.85);
+        ctx.strokeStyle = sw.color;
+        ctx.globalAlpha = Math.max(0, Math.min(0.85, sw.life * 0.7));
+        ctx.lineWidth = sw.lineIdx >= 0 ? 2.2 : 3.5;
+        ctx.shadowColor = sw.color;
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(cx, cy, expandR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      for (const sp of neonSparks) {
+        const baseR = minR + stepR * sp.lineIdx;
+        const sx = cx + sp.xOff;
+        const sy = cy - baseR + sp.yOff;
+        ctx.globalAlpha = Math.max(0, sp.life);
+        ctx.fillStyle = sp.color;
+        ctx.shadowColor = sp.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (sp.label) {
+          ctx.font = '900 10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(sp.label, sx, sy - 5);
+        }
+      }
+      ctx.restore();
+
+      ctx.save();
+      const pulseScale = 1 + stationPulseEnergy * 0.06;
+      const hubR = stationOuterR * pulseScale;
+
+      const hubGrad = ctx.createRadialGradient(cx, cy, 1, cx, cy, hubR);
+      hubGrad.addColorStop(0, '#ff007f');
+      hubGrad.addColorStop(0.35, '#3b0764');
+      hubGrad.addColorStop(0.78, '#090320');
+      hubGrad.addColorStop(1, '#02000a');
+      ctx.fillStyle = hubGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, hubR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#00f5ff';
+      ctx.lineWidth = 2.4;
+      ctx.shadowColor = '#00f5ff';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(cx, cy, hubR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ff007f';
+      ctx.lineWidth = 1.4;
+      ctx.shadowColor = '#ff007f';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(cx, cy, hubR * 0.84, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.75)';
+      ctx.lineWidth = 1.6;
+      for (let g = 0; g < 8; g++) {
+        const ga = (g * Math.PI) / 4 + nowSec * 0.35;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ga) * (hubR * 0.65), cy + Math.sin(ga) * (hubR * 0.65));
+        ctx.lineTo(cx + Math.cos(ga) * (hubR * 0.96), cy + Math.sin(ga) * (hubR * 0.96));
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'rgba(255, 230, 0, 0.65)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, hubR * 0.56, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const secHand = (nowSec * Math.PI) / 15 - Math.PI / 2;
+      const minHand = (nowSec * Math.PI) / 900 - Math.PI / 2;
+      ctx.strokeStyle = '#ffe600';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(secHand) * (hubR * 0.48), cy + Math.sin(secHand) * (hubR * 0.48));
+      ctx.stroke();
+
+      ctx.strokeStyle = '#00f5ff';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(minHand) * (hubR * 0.32), cy + Math.sin(minHand) * (hubR * 0.32));
+      ctx.stroke();
+
+      if (hubR >= 24) {
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00f5ff';
+        ctx.shadowBlur = 8;
+        ctx.font = `900 ${Math.max(7, Math.floor(hubR * 0.21))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('CENTRAL', cx, cy + hubR * 0.78);
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 8. DOM BUILD & UI SYNC
+    // =========================================================================
+    function buildStaticUI() {
+      const multBar = document.getElementById('ui-mult-bar');
+      multBar.innerHTML = '';
+      for (let i = 0; i < 11; i++) {
+        if (i > 0) {
+          const times = document.createElement('span');
+          times.className = 'text-[9px] text-slate-500 font-bold';
+          times.textContent = '×';
+          multBar.appendChild(times);
+        }
+        const badge = document.createElement('span');
+        badge.id = `mult-chip-${i}`;
+        badge.className = 'mono text-[10px] font-black px-1 rounded bg-slate-900/90 border border-slate-800';
+        badge.style.color = i < 10 ? LINE_DEFS[i].color : '#94a3b8';
+        badge.textContent = '1.00';
+        multBar.appendChild(badge);
+      }
+
+      const linesList = document.getElementById('ui-lines-list');
+      linesList.innerHTML = '';
+      for (let i = 0; i < 10; i++) {
+        const def = LINE_DEFS[i];
+        const row = document.createElement('div');
+        row.id = `line-card-${i}`;
+        row.className = 'line-card min-h-[38px]';
+        row.innerHTML = `
+          <button id="line-btn-${i}" onclick="buyLine(${i})"
+            class="line-btn w-full min-w-0 rounded-lg px-2 py-1 border text-left flex flex-col justify-center gap-0.5 relative overflow-hidden"
+            style="background: linear-gradient(135deg, rgba(10,18,36,0.96), rgba(4,8,20,0.98)); border-color: ${def.color}88; border-left: 3px solid ${def.color};">
+            <div class="flex items-center justify-between gap-1 leading-none min-w-0">
+              <div class="flex items-center gap-1 min-w-0 overflow-hidden">
+                <span class="font-black text-[11px] truncate" style="color: ${def.color};">${def.name}</span>
+                <span id="line-asc-badge-${i}" class="mono text-[9px] px-1 rounded bg-slate-950 text-slate-300 border border-slate-800 shrink-0">A:0</span>
+              </div>
+              <div class="mono text-[10px] font-black text-white shrink-0">
+                Lv.<span id="line-lv-${i}">0</span>/<span id="line-maxlv-${i}">100</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-1 text-[10px] leading-none min-w-0">
+              <div class="flex items-center gap-1.5 text-slate-300 mono min-w-0 truncate">
+                <span class="truncate">ゲイン:<strong id="line-gain-${i}" class="text-emerald-300">+0.01</strong></span>
+                <span class="truncate">速度:<strong id="line-spd-${i}" class="text-cyan-300">0.00/s</strong></span>
+              </div>
+              <div class="mono font-black text-amber-300 shrink-0 text-right max-w-[104px] truncate" id="line-cost-${i}">${formatYen(def.baseCost)}</div>
+            </div>
+          </button>
+          <button id="line-asc-btn-${i}" onclick="ascendLine(${i})"
+            class="hidden w-9 shrink-0 rounded-lg bg-gradient-to-b from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs shadow border border-amber-200 flex flex-col items-center justify-center leading-none transition">
+            <span>A</span>
+            <span class="text-[8px] font-extrabold mt-0.5">複々線</span>
+          </button>
+        `;
+        linesList.appendChild(row);
+      }
+
+      const promoList = document.getElementById('ui-promo-list');
+      promoList.innerHTML = '';
+      for (const p of PROMO_DEFS) {
+        const btn = document.createElement('button');
+        btn.id = `promo-btn-${p.id}`;
+        btn.onclick = () => doPromote(p.id);
+        btn.className = 'w-full rounded-lg bg-slate-900/90 hover:bg-slate-800/90 border border-amber-500/30 p-2 text-left flex flex-col gap-0.5 transition';
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-[11px] font-black text-amber-300">${p.title}</span>
+            <span id="promo-lv-cur-${p.id}" class="mono text-[10px] font-black text-slate-200">[Lv.0] 現在: ×1.00</span>
+          </div>
+          <div class="flex items-center justify-between gap-1 text-[10px]">
+            <span class="text-slate-400 truncate">${p.desc}</span>
+            <span id="promo-lv-next-${p.id}" class="mono font-bold text-emerald-400 shrink-0">[Lv.0] 次: ×1.00</span>
+          </div>
+          <div id="promo-exp-req-${p.id}" class="mono text-[9px] text-amber-200/80">Exp. 0 / 1 (+0)</div>
+        `;
+        promoList.appendChild(btn);
+      }
+
+      const infUpgList = document.getElementById('ui-inf-upgrades');
+      infUpgList.innerHTML = '';
+      for (const u of INF_UPG_DEFS) {
+        const btn = document.createElement('button');
+        btn.id = `inf-upg-btn-${u.id}`;
+        btn.onclick = () => buyInfinityUpgrade(u.id);
+        btn.className = 'w-full rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-indigo-500/30 p-2 text-left flex items-center justify-between gap-2 transition';
+        btn.innerHTML = `
+          <div class="min-w-0">
+            <div class="text-[11px] font-black text-indigo-200 truncate">${u.name} <span id="inf-upg-lv-${u.id}" class="mono text-[10px] text-cyan-300">Lv.0</span></div>
+            <div class="text-[9px] text-slate-400 truncate">${u.desc}</div>
+          </div>
+          <div id="inf-upg-cost-${u.id}" class="mono text-[10px] font-black text-fuchsia-300 bg-fuchsia-950/60 border border-fuchsia-500/40 px-2 py-1 rounded shrink-0">1 IP</div>
+        `;
+        infUpgList.appendChild(btn);
+      }
+
+      const icList = document.getElementById('ui-ic-list');
+      icList.innerHTML = '';
+      for (const ic of IC_DEFS) {
+        const card = document.createElement('div');
+        card.id = `ic-card-${ic.id}`;
+        card.className = 'rounded-lg bg-slate-900/90 border border-rose-500/30 p-2 flex flex-col gap-1';
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-[11px] font-black text-rose-300">${ic.name}</span>
+            <button id="ic-btn-${ic.id}" onclick="startInfinityChallenge(${ic.id})" class="px-2 py-0.5 rounded bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-400/50 text-[10px] font-black shrink-0">
+              挑戦開始
+            </button>
+          </div>
+          <div class="text-[9px] text-slate-300">${ic.constraint}</div>
+          <div class="text-[9px] text-emerald-300">${ic.reward}</div>
+        `;
+        icList.appendChild(card);
+      }
+
+      const achList = document.getElementById('ui-ach-list');
+      achList.innerHTML = '';
+      for (const a of ACH_DEFS) {
+        const item = document.createElement('div');
+        item.id = `ach-card-${a.id}`;
+        item.className = 'rounded-lg bg-slate-900/70 border border-slate-800 px-2.5 py-1.5 flex items-center justify-between gap-2';
+        item.innerHTML = `
+          <div class="min-w-0">
+            <div class="text-[11px] font-black text-slate-300 truncate">#${a.id} ${a.name}</div>
+            <div class="text-[9px] text-slate-400 truncate">${a.desc}</div>
+            ${a.reward ? `<div class="text-[9px] text-amber-300 font-bold truncate">${a.reward}</div>` : ''}
+          </div>
+          <span id="ach-status-${a.id}" class="mono text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-950 text-slate-500 border border-slate-800 shrink-0">未達成</span>
+        `;
+        achList.appendChild(item);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('ui-score').textContent = formatYen(state.score);
+      document.getElementById('ui-header-inf').textContent = formatBN(state.infinities, 0);
+      document.getElementById('ui-header-ip').textContent = formatBN(state.ip, 0);
+
+      const capReached = !state.breakInfinity && state.score.gte(INFINITY_CAP);
+      document.getElementById('ui-cap-tag').classList.toggle('hidden', !capReached);
+      document.getElementById('ui-infinity-ready-banner').classList.toggle('hidden', !state.score.gte(INFINITY_CAP));
+      document.getElementById('ui-banner-ip').textContent = formatBN(getIPGainOnInfinity(), 0);
+
+      const logProgress = Math.max(0, Math.min(100, (Math.max(0, state.score.log10()) / 308.255) * 100));
+      document.getElementById('ui-inf-progress-bar').style.width = `${logProgress.toFixed(2)}%`;
+
+      for (let i = 0; i < 10; i++) {
+        document.getElementById(`mult-chip-${i}`).textContent = formatBN(state.lines[i].mult);
+      }
+      document.getElementById('mult-chip-10').textContent = formatBN(state.pMult);
+      document.getElementById('ui-common-exp').textContent = getCommonExponent().toFixed(2);
+      const payoutPerLap = getPayoutPerLap();
+      document.getElementById('ui-total-payout').textContent = formatYen(payoutPerLap);
+
+      let estRevPerSec = new BigNum(0, 0);
+      const unlocked = getUnlockedLineCount();
+      for (let i = 0; i < unlocked; i++) {
+        const spd = getLineLapSpeed(i);
+        if (spd > 0) estRevPerSec = estRevPerSec.add(payoutPerLap.mul(spd));
+      }
+      document.getElementById('ui-rev-rate').textContent = formatYen(estRevPerSec);
+      document.getElementById('ui-total-laps').textContent = Math.floor(state.totalLaps).toLocaleString();
+
+      const activeIcBadge = document.getElementById('ui-active-ic-badge');
+      if (state.activeIC > 0) {
+        activeIcBadge.classList.remove('hidden');
+        document.getElementById('ui-active-ic-name').textContent = `IC${state.activeIC} 挑戦中`;
+      } else {
+        activeIcBadge.classList.add('hidden');
+      }
+
+      document.getElementById('ui-unlocked-count').textContent = `${unlocked}/10`;
+      const buyAmtBtn = document.getElementById('btn-buy-amount');
+      if (state.achievements[4]) {
+        buyAmtBtn.classList.remove('hidden');
+        const m = BUY_MODES[state.buyAmountMode];
+        buyAmtBtn.textContent = `購入:${m === 'max' ? '最大' : m}`;
+      }
+
+      const buyAllUnlocked = state.cumScore.gte(new BigNum(1, 6)) || state.score.gte(new BigNum(1, 6));
+      const buyAllBtn = document.getElementById('btn-buy-all');
+      buyAllBtn.disabled = !buyAllUnlocked;
+      if (buyAllUnlocked) {
+        buyAllBtn.textContent = '全て購入';
+        buyAllBtn.className = 'px-2 py-1 rounded bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-400/50 font-black text-[10px] transition';
+      }
+
+      const ascPower = getAscensionPower();
+      for (let i = 0; i < 10; i++) {
+        const line = state.lines[i];
+        const card = document.getElementById(`line-card-${i}`);
+        const btn = document.getElementById(`line-btn-${i}`);
+        const ascBtn = document.getElementById(`line-asc-btn-${i}`);
+
+        if (i >= unlocked) {
+          card.style.opacity = '0.45';
+          btn.disabled = true;
+          document.getElementById(`line-asc-badge-${i}`).textContent = 'LOCKED';
+          document.getElementById(`line-lv-${i}`).textContent = '0';
+          document.getElementById(`line-maxlv-${i}`).textContent = '100';
+          document.getElementById(`line-gain-${i}`).textContent = `+${formatBN(getLineMultGain(i))}`;
+          document.getElementById(`line-spd-${i}`).textContent = `${LINE_DEFS[i].baseSpeed.toFixed(2)}/s`;
+          document.getElementById(`line-cost-${i}`).textContent = i === 4 && state.activeIC === 9
+            ? 'IC9制限'
+            : `${formatYen(LINE_DEFS[i].baseCost)} (前Lv.5)`;
+          ascBtn.classList.add('hidden');
+          continue;
+        }
+
+        card.style.opacity = '1';
+        const maxLv = getMaxLevel(i);
+        const canAscend = line.level >= maxLv && state.activeIC !== 8;
+        const info = getNextUpgradeInfo(i);
+        const canAfford = info.count > 0 && state.score.gte(info.cost);
+
+        document.getElementById(`line-asc-badge-${i}`).textContent = `A:${line.ascensions} (×${formatBN(Math.pow(ascPower, line.ascensions), 0)})`;
+        document.getElementById(`line-lv-${i}`).textContent = line.level;
+        document.getElementById(`line-maxlv-${i}`).textContent = maxLv;
+        document.getElementById(`line-gain-${i}`).textContent = `+${formatBN(getLineMultGain(i))}`;
+        document.getElementById(`line-spd-${i}`).textContent = `${getLineLapSpeed(i).toFixed(2)}/s`;
+
+        if (line.level >= maxLv) {
+          document.getElementById(`line-cost-${i}`).textContent = 'MAX LEVEL';
+          btn.disabled = true;
+          btn.classList.remove('affordable-glow');
+          btn.style.filter = 'brightness(0.85)';
+        } else {
+          document.getElementById(`line-cost-${i}`).textContent = `${info.count > 1 ? `(+${info.count}) ` : ''}${formatYen(info.cost)}`;
+          btn.disabled = !canAfford;
+          btn.style.setProperty('--line-glow', `${LINE_DEFS[i].color}aa`);
+          btn.style.setProperty('--line-glow-soft', `${LINE_DEFS[i].color}33`);
+          btn.classList.toggle('affordable-glow', canAfford);
+          btn.style.filter = canAfford ? 'brightness(1.16)' : 'brightness(0.65)';
+        }
+
+        ascBtn.classList.toggle('hidden', !canAscend);
+        ascBtn.classList.toggle('jackpot-ready', canAscend);
+      }
+
+      document.getElementById('ui-prestige-count').textContent = state.prestigeCount;
+      document.getElementById('ui-pmult-cur').textContent = formatBN(state.pMult);
+      document.getElementById('ui-pexp-cur').textContent = state.pExp.toFixed(2);
+
+      const pot = getPotentialPrestige();
+      const presBtn = document.getElementById('btn-prestige');
+      if (!pot.unlocked) {
+        presBtn.disabled = true;
+        presBtn.className = 'w-full py-2 px-3 rounded-lg bg-slate-900/80 text-slate-500 border border-slate-700 font-black text-xs transition';
+        presBtn.textContent = `累計 1.00e10 で解放 (現在: ${formatYen(state.cumScore)})`;
+        document.getElementById('ui-pmult-next').textContent = '1.00';
+        document.getElementById('ui-pexp-next').textContent = '1.00';
+      } else {
+        presBtn.disabled = false;
+        presBtn.className = 'jackpot-ready w-full py-2 px-3 rounded-lg bg-gradient-to-r from-[#00f5ff] via-[#3b82ff] to-[#bc13fe] text-white border-2 border-cyan-200 font-black text-xs transition';
+        presBtn.textContent = '⚡ 自己破産を実行する (永続倍率獲得)';
+        document.getElementById('ui-pmult-next').textContent = formatBN(pot.pMult);
+        document.getElementById('ui-pexp-next').textContent = pot.pExp.toFixed(2);
+      }
+
+      const curExp = getCurrentPromoExp();
+      const promoUnlocked = state.pMult.gte(13319) || state.promoCount > 0;
+      document.getElementById('ui-promo-exp').textContent = curExp;
+      document.getElementById('ui-promo-exp-gain').textContent = curExp;
+      document.getElementById('ui-promo-count').textContent = state.promoCount;
+      document.getElementById('ui-promo-unlock-hint').textContent = promoUnlocked
+        ? (state.promoCount === 0 ? '初回は #1 を Lv.3以上 で実行可能' : '選択した能力を強化してリセット')
+        : 'P.倍率 ×13,319 (Exp 8) 到達で解放';
+
+      for (const p of PROMO_DEFS) {
+        const curLv = state.promoLevels[p.id];
+        const nextLv = getPromoTargetLevel(p.id, curExp);
+        const reqExp = Math.pow(2, curLv + 1);
+        const curEff = getEffectivePromoEffect(p.id);
+        const savedLv = state.promoLevels[p.id];
+        state.promoLevels[p.id] = Math.max(curLv + 1, nextLv);
+        const nextEff = getEffectivePromoEffect(p.id);
+        state.promoLevels[p.id] = savedLv;
+
+        const firstLock = state.promoCount === 0 && (p.id !== 0 || nextLv < 3);
+        const canPromo = promoUnlocked && nextLv > curLv && !firstLock;
+
+        const btn = document.getElementById(`promo-btn-${p.id}`);
+        btn.disabled = !canPromo;
+        btn.classList.toggle('jackpot-ready', canPromo);
+        btn.style.opacity = canPromo ? '1' : '0.5';
+        document.getElementById(`promo-lv-cur-${p.id}`).textContent = `[Lv.${curLv}] 現在: ×${curEff.toFixed(2)}`;
+        document.getElementById(`promo-lv-next-${p.id}`).textContent = `[Lv.${Math.max(curLv + 1, nextLv)}] 次: ×${nextEff.toFixed(2)}`;
+        document.getElementById(`promo-exp-req-${p.id}`).textContent = `Exp. ${curExp} / ${reqExp} (+${Math.max(0, nextLv - curLv)} Lv)`;
+      }
+
+      document.getElementById('ui-inf-count').textContent = formatBN(state.infinities, 0);
+      document.getElementById('ui-ip-amount').textContent = formatBN(state.ip, 0);
+      document.getElementById('ui-fastest-inf').textContent = state.fastestInfTime ? `${state.fastestInfTime.toFixed(2)}s` : '--';
+      const totalIcTime = getTotalICTime();
+      document.getElementById('ui-ic-total-time').textContent = totalIcTime > 0 ? `${totalIcTime.toFixed(1)}s` : '--';
+
+      const manInfBtn = document.getElementById('btn-manual-infinity');
+      const canInf = state.score.gte(INFINITY_CAP);
+      manInfBtn.disabled = !canInf;
+      manInfBtn.className = canInf
+        ? 'jackpot-ready flex-1 py-1.5 px-2 rounded-lg bg-gradient-to-r from-[#ff007f] to-[#bc13fe] text-white border-2 border-white font-black text-[11px] transition'
+        : 'flex-1 py-1.5 px-2 rounded-lg bg-purple-900/40 text-purple-300/50 border border-purple-500/30 font-black text-[11px] transition';
+      manInfBtn.textContent = canInf ? `∞ インフィニティ (+${formatBN(getIPGainOnInfinity(), 0)} IP)` : '1.80e308 でインフィニティ';
+
+      const breakBtn = document.getElementById('btn-break-infinity');
+      const allIcDone = getAllICCompletedCount() >= 9;
+      breakBtn.disabled = !allIcDone;
+      if (!allIcDone) {
+        breakBtn.textContent = `ブレイク∞ (${getAllICCompletedCount()}/9 IC)`;
+      } else {
+        breakBtn.className = state.breakInfinity
+          ? 'py-1.5 px-2.5 rounded-lg bg-fuchsia-600 text-white border border-fuchsia-300 font-black text-[10px] transition'
+          : 'py-1.5 px-2.5 rounded-lg bg-slate-800 text-slate-200 border border-slate-600 font-black text-[10px] transition';
+        breakBtn.textContent = `ブレイク∞: ${state.breakInfinity ? 'ON' : 'OFF'}`;
+      }
+
+      for (const u of INF_UPG_DEFS) {
+        const lv = state.infUpgrades[u.id] || 0;
+        const cost = u.baseCost.mul(Math.pow(u.costMult, lv));
+        const btn = document.getElementById(`inf-upg-btn-${u.id}`);
+        const afford = state.ip.gte(cost);
+        btn.disabled = !afford;
+        btn.style.opacity = afford ? '1' : '0.55';
+        document.getElementById(`inf-upg-lv-${u.id}`).textContent = `Lv.${lv}`;
+        document.getElementById(`inf-upg-cost-${u.id}`).textContent = `${formatBN(cost, 0)} IP`;
+      }
+
+      document.getElementById('btn-exit-ic').classList.toggle('hidden', state.activeIC === 0);
+      const icUnlocked = isICUnlocked();
+      const icLockBanner = document.getElementById('ui-ic-lock-banner');
+      const icUnlockedArea = document.getElementById('ui-ic-unlocked-area');
+      if (!icUnlocked) {
+        icLockBanner.classList.remove('hidden');
+        icUnlockedArea.classList.add('hidden');
+        icUnlockedArea.classList.remove('flex');
+        document.getElementById('ui-ic-lock-progress').textContent = `現在: ${formatBN(state.ip, 0)} / 2 IP`;
+      } else {
+        icLockBanner.classList.add('hidden');
+        icUnlockedArea.classList.remove('hidden');
+        icUnlockedArea.classList.add('flex');
+      }
+
+      for (const ic of IC_DEFS) {
+        const done = !!state.icCompleted[ic.id];
+        const active = state.activeIC === ic.id;
+        const btn = document.getElementById(`ic-btn-${ic.id}`);
+        if (active) {
+          btn.textContent = '挑戦中';
+          btn.className = 'px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-[10px] shrink-0';
+        } else if (done) {
+          const bt = state.icBestTimes[ic.id];
+          btn.textContent = `クリア済${bt ? ` (${bt.toFixed(1)}s)` : ''}`;
+          btn.className = 'px-2 py-0.5 rounded bg-emerald-600/30 text-emerald-200 border border-emerald-400/50 font-black text-[10px] shrink-0';
+        } else {
+          btn.textContent = '挑戦開始';
+          btn.className = 'px-2 py-0.5 rounded bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-400/50 font-black text-[10px] shrink-0';
+        }
+      }
+
+      let achDone = 0;
+      for (const a of ACH_DEFS) {
+        const ok = !!state.achievements[a.id];
+        if (ok) achDone++;
+        const card = document.getElementById(`ach-card-${a.id}`);
+        const st = document.getElementById(`ach-status-${a.id}`);
+        if (ok) {
+          card.className = 'rounded-lg bg-amber-950/35 border border-amber-400/50 px-2.5 py-1.5 flex items-center justify-between gap-2';
+          st.className = 'mono text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 shrink-0';
+          st.textContent = '達成済';
+        }
+      }
+      document.getElementById('ui-ach-count').textContent = `${achDone}/28`;
+      document.getElementById('ui-ach-summary').textContent = `${achDone} / 28`;
+
+      document.getElementById('btn-notation').textContent = state.notation === 'standard'
+        ? '標準表記 (T, Qa, Vg...)'
+        : '指数表記 (1.00e12...)';
+      const hrs = Math.floor(state.playTime / 3600);
+      const mins = Math.floor((state.playTime % 3600) / 60);
+      const secs = Math.floor(state.playTime % 60);
+      document.getElementById('stat-playtime').textContent = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      document.getElementById('stat-cumscore').textContent = formatYen(state.infCumScore);
+      document.getElementById('stat-totallaps').textContent = Math.floor(state.totalLaps).toLocaleString();
+      document.getElementById('stat-prestiges').textContent = state.prestigeCount;
+      document.getElementById('stat-promos').textContent = state.promoCount;
+      document.getElementById('stat-infs').textContent = formatBN(state.infinities, 0);
+
+      if (state.devUnlocked) {
+        document.getElementById('dev-panel').classList.remove('hidden');
+        document.getElementById('dev-panel').classList.add('flex');
+        document.getElementById('dev-speed-label').textContent = `×${state.devSpeed}`;
+      }
+    }
+
+    // =========================================================================
+    // 9. TABS, SETTINGS, DEV MODE, SAVE/LOAD & TOASTS
+    // =========================================================================
+    function switchTab(tab) {
+      for (const name of ['ops', 'inf', 'ach', 'sys']) {
+        const pane = document.getElementById(`tab-content-${name}`);
+        const btn = document.getElementById(`tab-btn-${name}`);
+        if (name === tab) {
+          pane.classList.remove('hidden');
+          btn.className = 'tab-btn px-2 py-1 rounded text-[10px] font-black transition bg-cyan-500/30 text-cyan-200 border border-cyan-300 shadow-[0_0_10px_rgba(0,245,255,0.45)]';
+        } else {
+          pane.classList.add('hidden');
+          btn.className = 'tab-btn px-2 py-1 rounded text-[10px] font-black transition text-slate-300 hover:text-white border border-transparent';
+        }
+      }
+    }
+
+    function toggleNotation() {
+      state.notation = state.notation === 'standard' ? 'scientific' : 'standard';
+    }
+
+    function checkDevCode() {
+      const inp = document.getElementById('dev-code-input');
+      if (inp.value.trim() === '02884') {
+        state.devUnlocked = true;
+        inp.value = '';
+        showToast('開発者モード (02884) が解放されました！', 'fuchsia');
+      } else {
+        showToast('アクセスコードが一致しません', 'rose');
+      }
+    }
+
+    function setDevSpeed(spd) {
+      if (!state.devUnlocked) return;
+      state.devSpeed = spd;
+    }
+
+    function devAddMoney(expAdd) {
+      if (!state.devUnlocked) return;
+      addScore(state.score.mul(BigNum.fromExp10(expAdd)));
+    }
+
+    function devSetInfinity() {
+      if (!state.devUnlocked) return;
+      state.score = INFINITY_CAP.clone();
+      state.cumScore = INFINITY_CAP.clone();
+    }
+
+    function devAddIP(amt) {
+      if (!state.devUnlocked) return;
+      state.ip = state.ip.add(amt);
+      state.infinities = state.infinities.add(1);
+    }
+
+    function showToast(msg, color = 'cyan') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `rounded-lg bg-slate-950/95 border border-${color}-400/60 px-3 py-2 text-[11px] font-black text-${color}-200 shadow-lg backdrop-blur-sm transition-opacity duration-300`;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 320);
+      }, 2800);
+    }
+
+    const SAVE_KEY = 'loop_line_tycoon_inf_save_v5';
+
+    function saveGame() {
+      try {
+        const payload = {
+          score: [state.score.m, state.score.e],
+          cumScore: [state.cumScore.m, state.cumScore.e],
+          infCumScore: [state.infCumScore.m, state.infCumScore.e],
+          lines: state.lines.map(l => ({
+            level: l.level,
+            ascensions: l.ascensions,
+            progress: l.progress,
+            mult: [l.mult.m, l.mult.e],
+            laps: l.laps
+          })),
+          pMult: [state.pMult.m, state.pMult.e],
+          pExp: state.pExp,
+          prestigeCount: state.prestigeCount,
+          promoLevels: state.promoLevels,
+          promoCount: state.promoCount,
+          everPrestigedThisPromo: state.everPrestigedThisPromo,
+          everAscendedThisPromo: state.everAscendedThisPromo,
+          infinities: [state.infinities.m, state.infinities.e],
+          ip: [state.ip.m, state.ip.e],
+          infUpgrades: state.infUpgrades,
+          fastestInfTime: state.fastestInfTime,
+          infRunTime: state.infRunTime,
+          activeIC: state.activeIC,
+          icUnlocked: state.icUnlocked,
+          icCompleted: state.icCompleted,
+          icBestTimes: state.icBestTimes,
+          breakInfinity: state.breakInfinity,
+          achievements: state.achievements,
+          buyAmountMode: state.buyAmountMode,
+          notation: state.notation,
+          playTime: state.playTime,
+          totalLaps: state.totalLaps,
+          devUnlocked: state.devUnlocked
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+      } catch (e) {}
+    }
+
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        if (!d || !Array.isArray(d.lines) || d.lines.length !== 10) return;
+
+        state.score = new BigNum(d.score[0], d.score[1]);
+        state.cumScore = new BigNum(d.cumScore[0], d.cumScore[1]);
+        state.infCumScore = new BigNum(d.infCumScore[0], d.infCumScore[1]);
+        state.lines = d.lines.map((l, idx) => ({
+          level: Number(l.level) || (idx === 0 ? 1 : 0),
+          ascensions: Number(l.ascensions) || 0,
+          progress: Number(l.progress) || 0,
+          mult: new BigNum(l.mult[0], l.mult[1]),
+          laps: Number(l.laps) || 0
+        }));
+        if (state.lines[0].level <= 0 && state.lines[0].ascensions === 0) {
+          state.lines[0].level = 1;
+        }
+        state.pMult = new BigNum(d.pMult[0], d.pMult[1]);
+        state.pExp = Number(d.pExp) || 1.00;
+        state.prestigeCount = Number(d.prestigeCount) || 0;
+        state.promoLevels = Array.isArray(d.promoLevels) ? d.promoLevels : [0, 0, 0, 0];
+        state.promoCount = Number(d.promoCount) || 0;
+        state.everPrestigedThisPromo = !!d.everPrestigedThisPromo;
+        state.everAscendedThisPromo = !!d.everAscendedThisPromo;
+        state.infinities = new BigNum(d.infinities[0], d.infinities[1]);
+        state.ip = new BigNum(d.ip[0], d.ip[1]);
+        state.infUpgrades = Object.assign({ iu1: 0, iu2: 0, iu3: 0, iu4: 0, iu5: 0 }, d.infUpgrades || {});
+        state.fastestInfTime = d.fastestInfTime || null;
+        state.infRunTime = Number(d.infRunTime) || 0;
+        state.activeIC = Number(d.activeIC) || 0;
+        state.icUnlocked = !!d.icUnlocked;
+        state.icCompleted = d.icCompleted || {};
+        state.icBestTimes = d.icBestTimes || {};
+        state.breakInfinity = !!d.breakInfinity;
+        state.achievements = d.achievements || {};
+        state.buyAmountMode = Number(d.buyAmountMode) || 0;
+        state.notation = d.notation === 'scientific' ? 'scientific' : 'standard';
+        state.playTime = Number(d.playTime) || 0;
+        state.totalLaps = Number(d.totalLaps) || 0;
+        state.devUnlocked = !!d.devUnlocked;
+      } catch (e) {
+        state = createInitialState();
+      }
+    }
+
+    function manualSave() {
+      saveGame();
+      showToast('運行データをセーブしました！', 'emerald');
+    }
+
+    function openResetModal() {
+      document.getElementById('reset-modal').classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    }
+
+    function executeHardReset() {
+      localStorage.removeItem(SAVE_KEY);
+      state = createInitialState();
+      closeResetModal();
+      showToast('データを初期化しました (赤線 Lv.1 運行開始)', 'rose');
+    }
+
+    // =========================================================================
+    // 10. MAIN ANIMATION & SIMULATION LOOP
+    // =========================================================================
+    let lastTime = performance.now();
+    let autoSaveTimer = 0;
+
+    function mainLoop(now) {
+      const dt = Math.min(0.25, Math.max(0, (now - lastTime) / 1000));
+      lastTime = now;
+
+      tickSimulation(dt);
+      resizeCanvas();
+      renderRailwayCanvas(now / 1000);
+      updateUI();
+
+      autoSaveTimer += dt;
+      if (autoSaveTimer >= 10) {
+        autoSaveTimer = 0;
+        saveGame();
+      }
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    window.onload = function () {
+      loadGame();
+      buildStaticUI();
+      resizeCanvas();
+      updateUI();
+      lastTime = performance.now();
+      requestAnimationFrame(mainLoop);
+    };
+  </script>
+</body>
+</html>
